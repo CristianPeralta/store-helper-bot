@@ -82,7 +82,7 @@ DATABASE_URL=postgresql://user:password@localhost:5432/store_bot
 ### 4. Run the app
 
 ```bash
-uvicorn app.main:app --reload
+python run.py
 ```
 
 ---
