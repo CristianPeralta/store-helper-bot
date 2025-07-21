@@ -1,53 +1,126 @@
 from datetime import datetime
-from typing import Optional, List
-from pydantic import Field
+from enum import Enum
+from typing import Dict, List, Optional, Union
+from uuid import UUID
 
-from . import BaseSchema
-from .user import User
+from pydantic import BaseModel, Field, field_validator
 
+from app.schemas import BaseSchema, ResponseSchema
+from app.schemas.message import MessageResponse
+
+
+class IntentEnum(str, Enum):
+    """Enum for chat intents."""
+    PRODUCT_INQUIRY = "product_inquiry"
+    GENERAL_QUESTION = "general_question"
+
+
+# Shared properties
 class ChatBase(BaseSchema):
     """Base schema for Chat with common fields."""
-    user_id: Optional[int] = Field(
+    client_name: Optional[str] = Field(
         None,
-        title="User ID",
-        description="ID of the user who owns this chat",
-        example=1
+        max_length=100,
+        description="Name of the client if provided"
+    )
+    client_email: Optional[str] = Field(
+        None,
+        max_length=255,
+        description="Email of the client if provided"
+    )
+    initial_intent: Optional[IntentEnum] = Field(
+        None,
+        description="Initial intent detected for this chat"
     )
 
+    @field_validator('client_email')
+    def validate_email(cls, v):
+        if v is not None and "@" not in v:
+            raise ValueError("Invalid email format")
+        return v
+
+
+# Properties to receive on chat creation
 class ChatCreate(ChatBase):
     """Schema for creating a new chat."""
-    user_id: int = Field(
-        ...,
-        title="User ID",
-        description="ID of the user who owns this chat",
-        example=1
-    )
-
-class ChatUpdate(ChatBase):
-    """Schema for updating an existing chat."""
     pass
 
+
+# Properties to receive on chat update
+class ChatUpdate(ChatBase):
+    """Schema for updating an existing chat."""
+    transferred_to_operator: Optional[bool] = Field(
+        None,
+        description="Whether the chat has been transferred to an operator"
+    )
+
+
+# Properties shared by models stored in DB
 class ChatInDBBase(ChatBase):
     """Base schema for chat data stored in the database."""
-    id: int
+    id: UUID
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None
+    transferred_to_operator: bool = False
+    operator_transfer_time: Optional[datetime] = None
 
     class Config:
         orm_mode = True
 
-class Chat(ChatInDBBase):
-    """Schema for chat data returned by the API."""
-    user: Optional[User] = None
 
+# Properties to return to client
+class ChatResponse(ChatInDBBase, ResponseSchema):
+    """Schema for chat data returned to the client."""
+    messages: List[MessageResponse] = Field(
+        default_factory=list,
+        description="List of messages in this chat"
+    )
+
+
+# Properties stored in DB
 class ChatInDB(ChatInDBBase):
     """Schema for chat data stored in the database."""
     pass
 
-class ChatWithMessages(Chat):
-    """Schema for chat data including its messages."""
-    messages: List["Message"] = []
 
-# Import here to avoid circular imports
-from .message import Message  # noqa
-ChatWithMessages.model_rebuild()
+# Additional response models
+class ChatListResponse(ResponseSchema):
+    """Schema for paginated list of chats."""
+    data: List[ChatResponse] = Field(
+        default_factory=list,
+        description="List of chats"
+    )
+    total: int = Field(
+        0,
+        description="Total number of chats"
+    )
+    page: int = Field(
+        1,
+        description="Current page number"
+    )
+    page_size: int = Field(
+        10,
+        description="Number of items per page"
+    )
+    pages: int = Field(
+        0,
+        description="Total number of pages"
+    )
+
+
+class ChatTransferRequest(BaseModel):
+    """Schema for chat transfer request."""
+    operator_email: str = Field(
+        ...,
+        description="Email of the operator to transfer the chat to"
+    )
+    transfer_reason: Optional[str] = Field(
+        None,
+        description="Reason for transferring the chat"
+    )
+
+    @validator('operator_email')
+    def validate_operator_email(cls, v):
+        if "@" not in v:
+            raise ValueError("Invalid operator email format")
+        return v

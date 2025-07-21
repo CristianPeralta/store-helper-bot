@@ -10,9 +10,7 @@ from .repositories import BaseRepository
 
 # Import models to ensure they are registered with SQLAlchemy
 # This must be after Base is defined
-from .models.user import User  # noqa
 from .models.chat import Chat  # noqa
-from .models.chat_state import ChatState  # noqa
 from .models.message import Message  # noqa
 
 __all__ = [

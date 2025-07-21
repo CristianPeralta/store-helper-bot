@@ -1,47 +1,61 @@
 """
-Pydantic schemas for the application.
+Schemas package.
 
-This module contains Pydantic models that define the data schemas used in the API.
-These schemas are used for request/response validation and serialization.
+This package contains Pydantic models used for request/response validation
+and serialization of data between the API and the database.
 """
 from datetime import datetime
-from typing import Any, Generic, TypeVar, Optional
-from pydantic import BaseModel, Field
+from typing import Generic, List, Optional, TypeVar
+
+from pydantic import BaseModel
 from pydantic.generics import GenericModel
 
-# Generic type for paginated responses
-DataT = TypeVar('DataT')
+# Type variables for generic schema types
+ModelType = TypeVar("ModelType")
+CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
+UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
+
 
 class BaseSchema(BaseModel):
     """Base schema with common fields and configuration."""
+    
     class Config:
         orm_mode = True
-        from_attributes = True
         json_encoders = {
-            datetime: lambda v: v.isoformat()
+            datetime: lambda v: v.isoformat(),
         }
+        allow_population_by_field_name = True
+        use_enum_values = True
+        arbitrary_types_allowed = True
 
-class ResponseSchema(GenericModel, Generic[DataT]):
-    """
-    Generic response schema for API responses.
-    
-    Attributes:
-        success: Whether the operation was successful
-        message: Optional message describing the result
-        data: The response data
-    """
+
+class ResponseSchema(BaseSchema):
+    """Base response schema with common fields for API responses."""
     success: bool = True
     message: Optional[str] = None
-    data: Optional[DataT] = None
+
+
+class ListResponse(GenericModel, Generic[ModelType]):
+    """
+    Generic list response schema for paginated results.
     
+    Attributes:
+        items: List of items in the current page
+        total: Total number of items
+        page: Current page number
+        page_size: Number of items per page
+        pages: Total number of pages
+    """
+    items: List[ModelType]
+    total: int
+    page: int
+    page_size: int
+    pages: int
+
     class Config:
         json_encoders = {
-            datetime: lambda v: v.isoformat()
+            datetime: lambda v: v.isoformat(),
         }
-
-# Re-export common types and base classes
-__all__ = [
-    'BaseSchema',
-    'ResponseSchema',
-    'DataT',
-]
+        allow_population_by_field_name = True
+        use_enum_values = True
+        arbitrary_types_allowed = True
