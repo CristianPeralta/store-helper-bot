@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Optional, Union
+from typing import List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
@@ -119,7 +119,7 @@ class ChatTransferRequest(BaseModel):
         description="Reason for transferring the chat"
     )
 
-    @validator('operator_email')
+    @field_validator('operator_email')
     def validate_operator_email(cls, v):
         if "@" not in v:
             raise ValueError("Invalid operator email format")

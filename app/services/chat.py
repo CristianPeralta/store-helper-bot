@@ -1,0 +1,139 @@
+from datetime import datetime
+from typing import List, Optional
+from uuid import UUID
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
+from app.db.models.chat import Chat as ChatModel
+from app.db.models.message import Message as MessageModel, Sender, Intent
+from app.schemas.chat import ChatCreate, ChatUpdate, ChatTransferRequest
+from . import BaseService
+
+
+class ChatService(BaseService[ChatModel, ChatCreate, ChatUpdate]):
+    """Service for managing chats and related operations."""
+
+    async def get_with_messages(
+        self, db: AsyncSession, chat_id: UUID
+    ) -> Optional[ChatModel]:
+        """Get a chat with its messages."""
+        result = await db.execute(
+            select(self.model)
+            .options(selectinload(self.model.messages))
+            .where(self.model.id == chat_id)
+        )
+        return result.scalars().first()
+
+    async def create_chat(
+        self, db: AsyncSession, *, client_name: str = None, client_email: str = None
+    ) -> ChatModel:
+        """Create a new chat with optional client information."""
+        chat_data = {}
+        if client_name:
+            chat_data["client_name"] = client_name
+        if client_email:
+            chat_data["client_email"] = client_email
+            
+        db_chat = self.model(**chat_data)
+        db.add(db_chat)
+        await db.commit()
+        await db.refresh(db_chat)
+        return db_chat
+
+    async def add_message(
+        self,
+        db: AsyncSession,
+        *,
+        chat_id: UUID,
+        content: str,
+        sender: Sender,
+        intent: Intent = None
+    ) -> MessageModel:
+        """Add a message to a chat."""
+        message = MessageModel(
+            chat_id=chat_id,
+            content=content,
+            sender=sender,
+            intent=intent
+        )
+        
+        # Update chat's updated_at timestamp
+        chat = await self.get(db, id=chat_id)
+        if chat:
+            chat.updated_at = datetime.utcnow()
+            db.add(chat)
+        
+        db.add(message)
+        await db.commit()
+        await db.refresh(message)
+        return message
+
+    async def transfer_to_operator(
+        self, db: AsyncSession, *, chat_id: UUID, transfer_data: ChatTransferRequest
+    ) -> Optional[ChatModel]:
+        """Transfer a chat to an operator."""
+        chat = await self.get(db, id=chat_id)
+        if not chat:
+            return None
+
+        chat.transferred_to_operator = True
+        chat.operator_transfer_time = datetime.utcnow()
+        
+        # Add a system message about the transfer
+        await self.add_message(
+            db,
+            chat_id=chat_id,
+            content=f"Chat transferred to operator: {transfer_data.operator_email}",
+            sender=Sender.BOT,
+            intent=Intent.GENERAL_QUESTION
+        )
+        
+        db.add(chat)
+        await db.commit()
+        await db.refresh(chat)
+        return chat
+
+    async def get_active_chats(
+        self, db: AsyncSession, *, include_transferred: bool = False, skip: int = 0, limit: int = 100
+    ) -> List[ChatModel]:
+        """Get active chats, optionally including transferred ones."""
+        query = select(self.model).where(
+            self.model.transferred_to_operator == include_transferred
+        )
+        
+        result = await db.execute(
+            query.order_by(self.model.updated_at.desc())
+                 .offset(skip)
+                 .limit(limit)
+                 .options(selectinload(self.model.messages))
+        )
+        return result.scalars().all()
+
+    async def get_chat_messages(
+        self, db: AsyncSession, chat_id: UUID, skip: int = 0, limit: int = 100
+    ) -> List[MessageModel]:
+        """Get messages for a specific chat."""
+        chat = await self.get_with_messages(db, chat_id)
+        if not chat:
+            return []
+        return chat.messages[skip:skip + limit]
+
+    async def get_chat_by_client_email(
+        self, db: AsyncSession, email: str, skip: int = 0, limit: int = 100
+    ) -> List[ChatModel]:
+        """Get chats by client email."""
+        result = await db.execute(
+            select(self.model)
+            .where(self.model.client_email == email)
+            .order_by(self.model.updated_at.desc())
+            .offset(skip)
+            .limit(limit)
+            .options(selectinload(self.model.messages))
+        )
+        return result.scalars().all()
+
+
+# Create a singleton instance
+chat_service = ChatService(ChatModel)
