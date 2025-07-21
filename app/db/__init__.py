@@ -22,8 +22,6 @@ __all__ = [
     'get_db_session',
     'BaseRepository',
     # Models
-    'User',
     'Chat',
-    'ChatState',
     'Message',
 ]
