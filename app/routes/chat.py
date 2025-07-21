@@ -1,7 +1,7 @@
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Optional, List
+from typing import List, Dict
 
 from app.db.session import get_db
 from app.schemas.chat import ChatResponse, ChatInDB
@@ -12,17 +12,19 @@ router = APIRouter(prefix="/chats", tags=["chats"])
 
 @router.post("/", response_model=ChatResponse, status_code=status.HTTP_201_CREATED)
 async def create_chat(
-    client_name: Optional[str] = None,
-    client_email: Optional[str] = None,
+    chat_data: Dict[str, str] = Body(...),
     db: AsyncSession = Depends(get_db)
 ):
     """
     Create a new chat session.
     
-    - **client_name**: Optional name of the client
-    - **client_email**: Optional email of the client
+    - **client_name**: Optional name of the client (in request body)
+    - **client_email**: Optional email of the client (in request body)
     """
     try:
+        client_name = chat_data.get("client_name")
+        client_email = chat_data.get("client_email")
+        
         chat = await chat_service.create_chat(
             db,
             client_name=client_name,
