@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routes import chat
-from app.db import init_models
+from app.db import database
 from app.core import get_settings, logger
 
 # Initialize settings
@@ -19,7 +19,8 @@ async def lifespan(app: FastAPI):
     
     # Initialize database
     try:
-        await init_models()
+        # Create all database tables
+        await database.create_all()
         logger.info("Database initialized successfully")
     except Exception as e:
         logger.error(f"Error initializing database: {e}")
@@ -29,6 +30,7 @@ async def lifespan(app: FastAPI):
     
     # Shutdown
     logger.info("Shutting down application...")
+    await database.close()  # Properly close database connections
 
 # Create FastAPI app
 app = FastAPI(
@@ -63,4 +65,4 @@ async def root():
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    return {"status": "healthy"}
+    return {"status": "ok"}
