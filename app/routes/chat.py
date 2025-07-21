@@ -1,11 +1,10 @@
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Optional
+from typing import Optional, List
 
 from app.db.session import get_db
-from app.schemas.chat import ChatResponse
+from app.schemas.chat import ChatResponse, ChatInDB
 from app.services.chat import chat_service
 
 router = APIRouter(prefix="/chats", tags=["chats"])
@@ -29,16 +28,33 @@ async def create_chat(
             client_name=client_name,
             client_email=client_email
         )
-        return {
-            "success": True,
-            "message": "Chat created successfully",
-            **jsonable_encoder(chat)
-        }
+        chat_response = ChatInDB.model_validate(chat, from_attributes=True)
+        return chat_response
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error creating chat: {str(e)}"
         )
+
+@router.get("/", response_model=List[ChatResponse])
+async def get_all_chats(
+    skip: int = 0,
+    limit: int = 100,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get all chats.
+    
+    - **skip**: Optional number of records to skip
+    - **limit**: Optional number of records to return
+    """
+    chats = await chat_service.get_active_chats(
+        db,
+        skip=skip,
+        limit=limit
+    )
+    chat_responses = [ChatInDB.model_validate(chat, from_attributes=True) for chat in chats]
+    return chat_responses
 
 @router.get("/{chat_id}", response_model=ChatResponse)
 async def get_chat(
@@ -56,7 +72,5 @@ async def get_chat(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Chat not found"
         )
-    return {
-        "success": True,
-        **jsonable_encoder(chat)
-    }
+    chat_response = ChatInDB.model_validate(chat, from_attributes=True)
+    return chat_response
