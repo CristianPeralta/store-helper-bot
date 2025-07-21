@@ -22,7 +22,7 @@ class ChatService(BaseService[ChatModel, ChatCreate, ChatUpdate]):
         result = await db.execute(
             select(self.model)
             .options(selectinload(self.model.messages))
-            .where(self.model.id == chat_id)
+            .where(self.model.id == str(chat_id))
         )
         return result.scalars().first()
 
