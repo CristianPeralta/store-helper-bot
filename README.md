@@ -49,6 +49,32 @@ store-helper-bot/
 └── .env
 ```
 
+## Flowchart
+
+```mermaid
+flowchart TD
+    A["Start: Client sends message"] --> B["Create anonymous session"]
+    B --> C["Analyze intent with LLM"]
+    C --> C1{"Was intent detected?"}
+    
+    C1 -- No --> O["Respond 'not understood' and offer human operator"]
+    O --> P{"Does client want to talk to an operator?"}
+    P -- Yes --> Q["Request email and name, then transfer to human"] --> I
+    P -- No --> R["Offer additional help"] --> I
+
+    C1 -- Yes --> D{"Type of intent?"}
+    D -- Product inquiry --> F["Enter inquiry mode"] --> E["Search in FakeStoreAPI"]
+    D -- General question --> G["Search info in local database"]
+    D -- Other --> R
+
+    E --> I
+    G --> I
+
+    I["Respond to client"] --> L["Log interaction in PostgreSQL"]
+    L --> M{"Does client need to continue?"}
+    M -- Yes --> C
+    M -- No --> N["End: Show session number (for tracking)"]
+```
 ---
 
 ## Getting Started
