@@ -18,6 +18,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 # Import your SQLAlchemy models here
 from app.db.base import Base
+from app.db.models.chat import Chat
+from app.db.models.message import Message
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
