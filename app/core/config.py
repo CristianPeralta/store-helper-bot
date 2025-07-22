@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     
     # Logging
     LOG_LEVEL: str = "INFO"
+
+    # Gemini
+    GEMINI_API_KEY: str
     
     model_config = SettingsConfigDict(
         env_file=".env",
