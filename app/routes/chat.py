@@ -1,10 +1,9 @@
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List
 
 from app.db.session import get_db
-from app.schemas.chat import ChatResponse, ChatInDB, ChatCreate, ChatListResponse
+from app.schemas.chat import ChatResponse, ChatCreate, ChatListResponse, ChatResponseWithMessages
 from app.services.chat import chat_service
 
 router = APIRouter(prefix="/chats", tags=["chats"])
@@ -61,21 +60,24 @@ async def get_all_chats(
     )
     return chat_list_response
 
-@router.get("/{chat_id}", response_model=ChatResponse)
-async def get_chat(
+@router.get("/{chat_id}/messages", response_model=ChatResponseWithMessages)
+async def get_chat_messages(
     chat_id: UUID,
+    skip: int = 0,
+    limit: int = 100,
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Get chat details by ID.
+    Get chat messages by ID.
     
     - **chat_id**: UUID of the chat to retrieve
+    - **skip**: Optional number of records to skip
+    - **limit**: Optional number of records to return
     """
-    chat = await chat_service.get_with_messages(db, chat_id=chat_id)
-    if not chat:
+    messages = await chat_service.get_chat_messages(db, chat_id=chat_id, skip=skip, limit=limit)
+    if not messages or len(messages) == 0:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Chat not found"
         )
-    chat_response = ChatResponse.model_validate(chat, from_attributes=True)
-    return chat_response
+    return ChatResponseWithMessages.model_validate({"messages": messages}, from_attributes=True)

@@ -33,10 +33,6 @@ class MessageBase(BaseSchema):
         ...,
         description="The sender of the message (client or bot)"
     )
-    intent: Optional[IntentEnum] = Field(
-        None,
-        description="Detected intent of the message, if any"
-    )
 
 
 # Properties to receive on message creation

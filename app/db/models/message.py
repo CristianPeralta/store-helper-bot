@@ -15,7 +15,7 @@ class Intent(PyEnum):
     GENERAL_QUESTION = "general_question"
 
 class Message(Base):
-    __tablename__ = "chat_messages"
+    __tablename__ = "messages"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     chat_id = Column(String, ForeignKey("chats.id"), nullable=False)
