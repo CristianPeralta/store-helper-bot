@@ -1,18 +1,73 @@
-from app.langchain.model import stream_graph_updates
-from app.core import logger
+import os
+import sys
+import logging
+from app.langchain.model import run_graph_once_with_interrupt
+from app.services.chat import chat_service
+from app.db.models.message import Sender, Intent
+from app.db.silent_session import get_db_session
 
-logger.info("Console chat. Type 'exit' to finish.")
-while True:
-    try:
-        user_input = input("User: ")
-        if user_input.lower() in ["quit", "exit", "q"]:
-            print("Goodbye!")
-            break
+# Disable all logging
+logging.disable(logging.CRITICAL)
 
-        stream_graph_updates(user_input)
-    except:
-        # fallback if input() is not available
-        user_input = "What do you know about LangGraph?"
-        print("User: " + user_input)
-        stream_graph_updates(user_input)
-        break
+print("\n" + "="*50)
+print("  Store Helper Chat - Type 'exit' to quit")
+print("="*50 + "\n")
+
+async def main():
+    # Get a new async session from our silent session factory
+    async with get_db_session() as db:
+        # Create a new chat
+        chat = await chat_service.create_chat(
+            db,
+            client_name="Console User",
+            client_email="console@example.com"
+        )
+        
+        try:
+            while True:
+                try:
+                    user_input = input("You: ")
+                    if user_input.lower() in ["quit", "exit", "q"]:
+                        print("\nGoodbye! Your chat ID is:", chat.id)
+                        break
+
+                    # Save user message
+                    await chat_service.add_message(
+                        db,
+                        chat_id=chat.id,
+                        content=user_input,
+                        sender=Sender.CLIENT,
+                        intent=Intent.GENERAL_QUESTION
+                    )
+                    
+                    # Get bot response
+                    response = run_graph_once_with_interrupt(user_input)
+                    print("\nBot:", response.content, "\n")
+                    
+                    # Save bot response
+                    await chat_service.add_message(
+                        db,
+                        chat_id=chat.id,
+                        content=response.content,
+                        sender=Sender.BOT,
+                        intent=Intent.GENERAL_QUESTION
+                    )
+                    
+                    # Commit after each exchange
+                    await db.commit()
+                    
+                except Exception as e:
+                    print(f"\nAn error occurred: {str(e)}\n")
+                    await db.rollback()
+                    
+        finally:
+            await db.close()
+
+if __name__ == "__main__":
+    # Disable warnings before running
+    import warnings
+    warnings.filterwarnings("ignore")
+    
+    # Run the main function
+    import asyncio
+    asyncio.run(main())

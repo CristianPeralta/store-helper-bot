@@ -37,31 +37,29 @@ graph_builder.set_entry_point("chatbot")
 memory = InMemorySaver()
 graph = graph_builder.compile(checkpointer=memory)
 
-def stream_graph_updates(user_input: str):
-    events = graph.stream(
+def run_graph_once_with_interrupt(user_input: str):
+    result = graph.invoke(
         {"messages": [{"role": "user", "content": user_input}]},
-        config,
-        stream_mode="values",
+        config=config,
     )
 
-    for event in events:
-        if isinstance(event, Command) and event.name == "interrupt":
-            query = event.data.get("query", "No query provided.")
-            print("\n=== INTERRUPCIÓN HUMANA REQUERIDA ===")
-            print(f"Consulta del modelo: {query}")
-            human_input = input("Tu respuesta como humano (JSON): ")
+    # Verificamos si el resultado es un comando de interrupción
+    if isinstance(result, Command) and result.name == "interrupt":
+        query = result.data.get("query", "No query provided.")
+        print("\n=== INTERRUPCIÓN HUMANA REQUERIDA ===")
+        print(f"Consulta del modelo: {query}")
+        human_input = input("Tu respuesta como humano (JSON): ")
 
-            try:
-                human_data = json.loads(human_input)
-            except json.JSONDecodeError:
-                print("Entrada inválida. Debe ser un JSON válido.")
-                return
+        # Resumimos la ejecución con el input humano
+        resumed_result = graph.resume(result, {"data": human_input}, config=config)
 
-            events = graph.resume(event, {"data": human_data}, config=config)
+        if isinstance(resumed_result, dict) and "messages" in resumed_result:
+            return resumed_result["messages"][-1]
 
-            for resumed_event in events:
-                if "messages" in resumed_event:
-                    resumed_event["messages"][-1].pretty_print()
+        return resumed_result
 
-        elif "messages" in event:
-            event["messages"][-1].pretty_print()
+    # Resultado normal con mensajes
+    if isinstance(result, dict) and "messages" in result:
+        return result["messages"][-1]
+
+    return result

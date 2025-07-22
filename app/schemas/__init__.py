@@ -5,10 +5,9 @@ This package contains Pydantic models used for request/response validation
 and serialization of data between the API and the database.
 """
 from datetime import datetime
-from typing import Generic, List, Optional, TypeVar
+from typing import Generic, List, TypeVar
 
 from pydantic import BaseModel
-from pydantic.generics import GenericModel
 
 # Type variables for generic schema types
 ModelType = TypeVar("ModelType")
@@ -34,7 +33,7 @@ class ResponseSchema(BaseSchema):
     pass
 
 
-class ListResponse(GenericModel, Generic[ModelType]):
+class ListResponse(BaseModel, Generic[ModelType]):
     """
     Generic list response schema for paginated results.
     
