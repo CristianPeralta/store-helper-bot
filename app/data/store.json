@@ -1,0 +1,41 @@
+{
+  "store": {
+    "name": "Fake Store",
+    "location": {
+      "city": "Lima",
+      "country": "Perú",
+      "address": "Av. Falsa 123, Miraflores"
+    },
+    "contact": {
+      "phone": "+51 987 654 321",
+      "email": "contacto@fakestore.com",
+      "website": "https://www.fakestore.com"
+    },
+    "hours": {
+      "monday_to_friday": "09:00 - 20:00",
+      "saturday": "10:00 - 18:00",
+      "sunday": "Cerrado"
+    },
+    "promotions": [
+      {
+        "title": "2x1 en polos básicos",
+        "valid_until": "2025-08-31"
+      },
+      {
+        "title": "20% de descuento en zapatillas",
+        "valid_until": "2025-09-15"
+      }
+    ],
+    "payment_methods": [
+      "Efectivo",
+      "Tarjeta de crédito",
+      "Yape",
+      "Plin"
+    ],
+    "social_media": {
+      "facebook": "https://facebook.com/fakestore",
+      "instagram": "https://instagram.com/fakestore",
+      "tiktok": "https://tiktok.com/@fakestore"
+    }
+  }
+}
