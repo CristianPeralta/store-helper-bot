@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     # Gemini
     GEMINI_API_KEY: str
     
+    # Api for products
+    FAKE_STORE_API_URL: str = "https://fakestoreapi.com"
+    
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding='utf-8',
