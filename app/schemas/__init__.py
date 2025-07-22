@@ -31,8 +31,7 @@ class BaseSchema(BaseModel):
 
 class ResponseSchema(BaseSchema):
     """Base response schema with common fields for API responses."""
-    success: bool = True
-    message: Optional[str] = None
+    pass
 
 
 class ListResponse(GenericModel, Generic[ModelType]):

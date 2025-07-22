@@ -28,10 +28,6 @@ class ChatBase(BaseSchema):
         max_length=255,
         description="Email of the client if provided"
     )
-    initial_intent: Optional[IntentEnum] = Field(
-        None,
-        description="Initial intent detected for this chat"
-    )
 
     @field_validator('client_email')
     def validate_email(cls, v):
@@ -71,10 +67,7 @@ class ChatInDBBase(ChatBase):
 # Properties to return to client
 class ChatResponse(ChatInDBBase, ResponseSchema):
     """Schema for chat data returned to the client."""
-    messages: List[MessageResponse] = Field(
-        default_factory=list,
-        description="List of messages in this chat"
-    )
+    pass
 
 
 # Properties stored in DB
@@ -86,10 +79,6 @@ class ChatInDB(ChatInDBBase):
 # Additional response models
 class ChatListResponse(ResponseSchema):
     """Schema for paginated list of chats."""
-    data: List[ChatResponse] = Field(
-        default_factory=list,
-        description="List of chats"
-    )
     total: int = Field(
         0,
         description="Total number of chats"
@@ -105,6 +94,10 @@ class ChatListResponse(ResponseSchema):
     pages: int = Field(
         0,
         description="Total number of pages"
+    )
+    data: List[ChatResponse] = Field(
+        default_factory=list,
+        description="List of chats"
     )
 
 

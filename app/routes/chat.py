@@ -1,10 +1,10 @@
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, Body
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Dict
+from typing import List
 
 from app.db.session import get_db
-from app.schemas.chat import ChatResponse, ChatInDB
+from app.schemas.chat import ChatResponse, ChatInDB, ChatCreate, ChatListResponse
 from app.services.chat import chat_service
 
 router = APIRouter(prefix="/chats", tags=["chats"])
@@ -12,7 +12,7 @@ router = APIRouter(prefix="/chats", tags=["chats"])
 
 @router.post("/", response_model=ChatResponse, status_code=status.HTTP_201_CREATED)
 async def create_chat(
-    chat_data: Dict[str, str] = Body(...),
+    chat_data: ChatCreate,
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -22,23 +22,19 @@ async def create_chat(
     - **client_email**: Optional email of the client (in request body)
     """
     try:
-        client_name = chat_data.get("client_name")
-        client_email = chat_data.get("client_email")
-        
         chat = await chat_service.create_chat(
             db,
-            client_name=client_name,
-            client_email=client_email
+            client_name=chat_data.client_name,
+            client_email=chat_data.client_email
         )
-        chat_response = ChatInDB.model_validate(chat, from_attributes=True)
-        return chat_response
+        return ChatResponse.model_validate(chat, from_attributes=True)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error creating chat: {str(e)}"
         )
 
-@router.get("/", response_model=List[ChatResponse])
+@router.get("/", response_model=ChatListResponse)
 async def get_all_chats(
     skip: int = 0,
     limit: int = 100,
@@ -55,8 +51,15 @@ async def get_all_chats(
         skip=skip,
         limit=limit
     )
-    chat_responses = [ChatInDB.model_validate(chat, from_attributes=True) for chat in chats]
-    return chat_responses
+    chat_responses = [ChatResponse.model_validate(chat, from_attributes=True) for chat in chats]
+    chat_list_response = ChatListResponse(
+        total=len(chats),
+        page=skip // limit + 1,
+        page_size=limit,
+        pages=(len(chats) + limit - 1) // limit,
+        data=chat_responses,
+    )
+    return chat_list_response
 
 @router.get("/{chat_id}", response_model=ChatResponse)
 async def get_chat(
@@ -74,5 +77,5 @@ async def get_chat(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Chat not found"
         )
-    chat_response = ChatInDB.model_validate(chat, from_attributes=True)
+    chat_response = ChatResponse.model_validate(chat, from_attributes=True)
     return chat_response
