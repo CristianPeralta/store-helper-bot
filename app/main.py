@@ -51,7 +51,7 @@ app.add_middleware(
 )
 
 # Include routes
-app.include_router(chat.router)
+app.include_router(chat.router, prefix="/api")
 
 @app.get("/")
 async def root():
