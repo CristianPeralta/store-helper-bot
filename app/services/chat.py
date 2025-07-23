@@ -112,13 +112,17 @@ class ChatService(BaseService[ChatModel, ChatCreate, ChatUpdate]):
         return result.scalars().all()
 
     async def get_chat_messages(
-        self, db: AsyncSession, chat_id: UUID, skip: int = 0, limit: int = 100
+        self, db: AsyncSession, chat_id: UUID, skip: int = 0, limit: int = 100,
+        sort_by: str = "created_at"
     ) -> List[MessageModel]:
         """Get messages for a specific chat."""
         chat = await self.get_with_messages(db, chat_id)
         if not chat:
             return []
-        return chat.messages[skip:skip + limit]
+        
+        # Sort messages by the specified field
+        sorted_messages = sorted(chat.messages, key=lambda x: getattr(x, sort_by))
+        return sorted_messages[skip:skip + limit]
 
     async def get_chat_by_client_email(
         self, db: AsyncSession, email: str, skip: int = 0, limit: int = 100

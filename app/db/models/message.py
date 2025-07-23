@@ -13,6 +13,8 @@ class Sender(PyEnum):
 class Intent(PyEnum):
     PRODUCT_INQUIRY = "product_inquiry"
     GENERAL_QUESTION = "general_question"
+    GREETING = "greeting"
+    OTHER = "other"
 
 class Message(Base):
     __tablename__ = "messages"

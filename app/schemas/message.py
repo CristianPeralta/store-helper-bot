@@ -18,6 +18,8 @@ class IntentEnum(str, Enum):
     """Enum for message intents."""
     PRODUCT_INQUIRY = "product_inquiry"
     GENERAL_QUESTION = "general_question"
+    GREETING = "greeting"
+    OTHER = "other"
 
 
 # Shared properties
@@ -65,7 +67,10 @@ class MessageInDBBase(MessageBase):
     id: UUID
     chat_id: UUID
     created_at: datetime
-
+    intent: Optional[IntentEnum] = Field(
+        None,
+        description="Intent of the message"
+    )
     class Config:
         orm_mode = True
 
