@@ -3,6 +3,7 @@ import sys
 import logging
 from app.langchain.model import run_graph_once_with_interrupt
 from app.services.chat import chat_service
+from app.services.message import message_service
 from app.db.models.message import Sender, Intent
 from app.db.silent_session import get_db_session
 
@@ -32,25 +33,30 @@ async def main():
                         break
 
                     # Save user message
-                    await chat_service.add_message(
+                    user_message = await chat_service.add_message(
                         db,
                         chat_id=chat.id,
                         content=user_input,
-                        sender=Sender.CLIENT,
-                        intent=Intent.GENERAL_QUESTION
+                        sender=Sender.CLIENT
                     )
                     
                     # Get bot response
                     response = run_graph_once_with_interrupt(user_input)
-                    print("\nBot:", response.content, "\n")
+                    print("\nBot:", response["content"], "\n")
                     
                     # Save bot response
                     await chat_service.add_message(
                         db,
                         chat_id=chat.id,
-                        content=response.content,
+                        content=response["content"],
                         sender=Sender.BOT,
-                        intent=Intent.GENERAL_QUESTION
+                        intent=Intent(response["intent"])
+                    )   
+                    # Update intent of last message
+                    await message_service.update_message_intent(
+                        db,
+                        message_id=user_message.id,
+                        new_intent=Intent(response["intent"])
                     )
                     
                     # Commit after each exchange
