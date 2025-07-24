@@ -25,6 +25,9 @@ class Settings(BaseSettings):
 
     # Gemini
     GEMINI_API_KEY: str
+
+    # Fireworks
+    FIREWORKS_API_KEY: str
     
     # Api for products
     FAKE_STORE_API_URL: str = "https://fakestoreapi.com"
