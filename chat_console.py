@@ -23,7 +23,13 @@ async def main():
             client_name="Console User",
             client_email="console@example.com"
         )
-        
+        messages = []
+        current_state = {
+            "messages": messages,
+            "name": "",
+            "email": "",
+            "last_inquiry_id": None
+        }
         try:
             while True:
                 try:
@@ -39,9 +45,12 @@ async def main():
                         content=user_input,
                         sender=Sender.CLIENT
                     )
+
+                    messages.append({"role": "user", "content": user_input})
+                    current_state["messages"] = messages
                     
                     # Get bot response
-                    response = run_graph_once_with_interrupt(user_input)
+                    response = run_graph_once_with_interrupt(chat.id, current_state)
                     print("\nBot:", response["content"], "\n")
                     
                     # Save bot response
