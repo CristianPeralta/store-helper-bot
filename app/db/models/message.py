@@ -11,7 +11,6 @@ class Sender(PyEnum):
     BOT = "bot"
 
 class Intent(PyEnum):
-    PRODUCT_INQUIRY = "product_inquiry"
     GENERAL_QUESTION = "general_question"
     GREETING = "greeting"
     STORE_INFO = "store_info"
@@ -21,6 +20,10 @@ class Intent(PyEnum):
     STORE_PAYMENT_METHODS = "store_payment_methods"
     STORE_SOCIAL_MEDIA = "store_social_media"
     STORE_LOCATION = "store_location"
+    PRODUCT_LIST = "product_list"
+    PRODUCT_CATEGORIES = "product_categories"
+    PRODUCT_DETAILS = "product_details"
+    PRODUCT_LIST_BY_CATEGORY = "product_list_by_category"
     OTHER = "other"
 
 class Message(Base):

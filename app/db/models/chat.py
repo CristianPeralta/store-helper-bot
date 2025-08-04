@@ -6,7 +6,6 @@ from app.db import Base
 import uuid
 
 class Intent(PyEnum):
-    PRODUCT_INQUIRY = "product_inquiry"
     GENERAL_QUESTION = "general_question"
     STORE_INFO = "store_info"
     STORE_HOURS = "store_hours"
@@ -15,6 +14,10 @@ class Intent(PyEnum):
     STORE_PAYMENT_METHODS = "store_payment_methods"
     STORE_SOCIAL_MEDIA = "store_social_media"
     STORE_LOCATION = "store_location"
+    PRODUCT_LIST = "product_list"
+    PRODUCT_CATEGORIES = "product_categories"
+    PRODUCT_DETAILS = "product_details"
+    PRODUCT_LIST_BY_CATEGORY = "product_list_by_category"
     OTHER = "other"
 
 class Chat(Base):
