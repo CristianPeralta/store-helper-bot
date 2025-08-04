@@ -14,6 +14,9 @@ from langgraph.graph import StateGraph, START
 from langchain_core.tools import tool, InjectedToolCallId
 from langgraph.prebuilt import ToolNode, tools_condition
 from langchain_core.messages import ToolMessage
+from app.services.store import StoreService
+
+store_service = StoreService()
 
 os.environ["GOOGLE_API_KEY"] = os.getenv("GEMINI_API_KEY")
 os.environ["FIREWORKS_API_KEY"] = os.getenv("FIREWORKS_API_KEY")
@@ -105,9 +108,84 @@ def human_assistance(
         }
     )
 
+@tool
+def get_store_data(intent: str, tool_call_id: Annotated[str, InjectedToolCallId]) -> Command:
+    """
+    Fetch store-related information based on intent. Supported intents:
+    - store_info
+    - store_hours
+    - store_contact
+    - store_promotions
+    - store_payment_methods
+    - store_social_media
+    - store_location
+    """
+
+    mapping = {
+        "store_info": store_service.get_store_info,
+        "store_hours": store_service.get_store_hours,
+        "store_contact": store_service.get_contact_info,
+        "store_promotions": store_service.get_promotions,
+        "store_payment_methods": store_service.get_payment_methods,
+        "store_social_media": store_service.get_social_media_links,
+        "store_location": store_service.get_location
+    }
+
+    if intent not in mapping:
+        return Command(update={
+            "messages": [
+                ToolMessage(f"Intent '{intent}' is not supported.", tool_call_id=tool_call_id)
+            ]
+        })
+
+    try:
+        # Call the synchronous store service method directly
+        result = mapping[intent]()
+        
+        # Handle Pydantic models by converting to dict
+        if hasattr(result, 'dict'):
+            result = result.dict()
+        
+        # Format the response based on the result type
+        if isinstance(result, dict):
+            # Flatten nested dictionaries for better readability
+            def flatten_dict(d, parent_key='', sep=' '):
+                items = []
+                for k, v in d.items():
+                    new_key = f"{parent_key}{sep}{k}" if parent_key else k
+                    if isinstance(v, dict):
+                        items.extend(flatten_dict(v, new_key, sep).items())
+                    else:
+                        items.append((new_key, v))
+                return dict(items)
+            
+            flat_result = flatten_dict(result)
+            reply = "\n".join(f"- {k.replace('_', ' ').capitalize()}: {v}" for k, v in flat_result.items())
+        elif isinstance(result, (list, tuple)):
+            reply = "\n".join(f"- {item}" for item in result)
+        else:
+            reply = str(result)
+            
+        return Command(update={
+            "messages": [
+                ToolMessage(reply, tool_call_id=tool_call_id)
+            ]
+        })
+        
+    except Exception as e:
+        error_msg = str(e)
+        if hasattr(e, 'detail'):
+            error_msg = e.detail
+        return Command(update={
+            "messages": [
+                ToolMessage(f"Error fetching store data: {error_msg}", tool_call_id=tool_call_id)
+            ]
+        })
+
+
 graph_builder = StateGraph(State)
 
-tools = [human_assistance]
+tools = [human_assistance, get_store_data]
 
 llm_with_tools = llm.bind_tools(tools)
 
@@ -146,8 +224,16 @@ def run_graph_once_with_interrupt(thread_id: str = "1", current_state: State = N
             "- product_inquiry\n"
             "- general_question\n"
             "- greeting\n"
+            "- store_info\n"
+            "- store_hours\n"
+            "- store_contact\n"
+            "- store_promotions\n"
+            "- store_payment_methods\n"
+            "- store_social_media\n"
+            "- store_location\n"
             "- other\n\n"
             "If the user asks for something you cannot answer, call the `human_assistance` tool\n"
+            "If the user asks about the store, you may call the appropriate store info tool `get_store_data`.\n"
             "Always respond in this exact JSON format:\n"
             "{\"reply\": \"<your reply here>\", \"intent\": \"<one of the above categories>\"}\n\n"
             "Example:\n"
