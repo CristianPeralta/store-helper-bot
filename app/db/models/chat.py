@@ -8,6 +8,14 @@ import uuid
 class Intent(PyEnum):
     PRODUCT_INQUIRY = "product_inquiry"
     GENERAL_QUESTION = "general_question"
+    STORE_INFO = "store_info"
+    STORE_HOURS = "store_hours"
+    STORE_CONTACT = "store_contact"
+    STORE_PROMOTIONS = "store_promotions"
+    STORE_PAYMENT_METHODS = "store_payment_methods"
+    STORE_SOCIAL_MEDIA = "store_social_media"
+    STORE_LOCATION = "store_location"
+    OTHER = "other"
 
 class Chat(Base):
     __tablename__ = "chats"
