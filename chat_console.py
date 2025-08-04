@@ -50,7 +50,7 @@ async def main():
                     current_state["messages"] = messages
                     
                     # Get bot response
-                    response = run_graph_once_with_interrupt(chat.id, current_state)
+                    response = await run_graph_once_with_interrupt(chat.id, current_state)
                     print("\nBot:", response["content"], "\n")
                     
                     # Save bot response

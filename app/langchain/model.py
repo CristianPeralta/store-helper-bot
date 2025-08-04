@@ -1,6 +1,7 @@
 import os
 import re
 from langchain.chat_models import init_chat_model
+from typing import Optional
 import json
 from typing import Annotated, Dict, Any
 from datetime import datetime
@@ -15,8 +16,10 @@ from langchain_core.tools import tool, InjectedToolCallId
 from langgraph.prebuilt import ToolNode, tools_condition
 from langchain_core.messages import ToolMessage
 from app.services.store import StoreService
+from app.services.product import ProductService
 
 store_service = StoreService()
+product_service = ProductService()
 
 os.environ["GOOGLE_API_KEY"] = os.getenv("GEMINI_API_KEY")
 os.environ["FIREWORKS_API_KEY"] = os.getenv("FIREWORKS_API_KEY")
@@ -182,19 +185,129 @@ def get_store_data(intent: str, tool_call_id: Annotated[str, InjectedToolCallId]
             ]
         })
 
+@tool
+async def get_products_data(intent: str, tool_call_id: Annotated[str, InjectedToolCallId], category: Optional[str] = None, product_id: Optional[int] = None) -> Command:
+    """
+    Fetch product-related information based on intent.
+
+    Args:
+        intent: The intent to fetch data for
+        category: The category to filter by
+        product_id: The ID of the product to retrieve
+        tool_call_id: Unique ID for this tool call
+
+    Supported intents:
+    - product_list_by_category: List of products in a specific category
+    - product_categories: List of all product categories
+    - product_details: Details of a specific product
+    - product_list: List of all products
+    """
+
+    # Define the mapping of intents to async functions
+    mapping = {
+        "product_list": product_service.get_products,
+        "product_categories": product_service.get_categories,
+        "product_details": product_service.get_product,
+        "product_list_by_category": product_service.get_products_by_category
+    }
+
+    # Validate intent
+    if intent not in mapping:
+        return Command(update={
+            "messages": [
+                ToolMessage(f"Intent '{intent}' is not supported.", tool_call_id=tool_call_id)
+            ]
+        })
+
+    # Validate required parameters
+    if intent == "product_list_by_category" and not category:
+        return Command(update={
+            "messages": [
+                ToolMessage("Please provide a category.", tool_call_id=tool_call_id)
+            ]
+        })
+    
+    if intent == "product_details" and not product_id:
+        return Command(update={
+            "messages": [
+                ToolMessage("Please provide a product ID.", tool_call_id=tool_call_id)
+            ]
+        })
+
+    print(f"Getting products data for intent: {intent}")
+
+    try:
+        # Call the appropriate async function with parameters
+        if intent == "product_list_by_category":
+            result = await product_service.get_products_by_category(category)
+        elif intent == "product_details":
+            result = await product_service.get_product(product_id)
+        elif intent == "product_list":
+            result = await product_service.get_products()
+        elif intent == "product_categories":
+            result = await product_service.get_categories()
+        else:
+            result = await mapping[intent]()
+
+        # Convert Pydantic models to dict if needed
+        if hasattr(result, 'dict'):
+            result = result.dict()
+        
+        # Format the response based on the result type
+        if isinstance(result, dict):
+            # Flatten nested dictionaries for better readability
+            def flatten_dict(d, parent_key='', sep=' '):
+                items = []
+                for k, v in d.items():
+                    new_key = f"{parent_key}{sep}{k}" if parent_key else k
+                    if isinstance(v, dict):
+                        items.extend(flatten_dict(v, new_key, sep).items())
+                    else:
+                        items.append((new_key, v))
+                return dict(items)
+            
+            flat_result = flatten_dict(result)
+            reply = "\n".join(f"- {k.replace('_', ' ').capitalize()}: {v}" for k, v in flat_result.items())
+        elif isinstance(result, (list, tuple)):
+            reply = "\n".join(f"- {item}" for item in result)
+        else:
+            reply = str(result)
+            
+        return Command(update={
+            "messages": [
+                ToolMessage(reply, tool_call_id=tool_call_id)
+            ]
+        })
+        
+    except Exception as e:
+        error_msg = str(e)
+        if hasattr(e, 'detail'):
+            error_msg = e.detail
+        print(f"Error in get_products_data: {error_msg}")
+        return Command(update={
+            "messages": [
+                ToolMessage(f"Error fetching product data: {error_msg}", tool_call_id=tool_call_id)
+            ]
+        })
+
 
 graph_builder = StateGraph(State)
 
-tools = [human_assistance, get_store_data]
+tools = [human_assistance, get_store_data, get_products_data]
+
+# Create a dictionary of tool names to async functions
+tool_executor = {
+    tool.name: tool.func for tool in tools
+}
 
 llm_with_tools = llm.bind_tools(tools)
 
-def chatbot(state: State):
-    return {"messages": [llm_with_tools.invoke(state["messages"])]}
+async def chatbot(state: State):
+    response = await llm_with_tools.ainvoke(state["messages"])
+    return {"messages": [response]}
 
 graph_builder.add_edge(START, "chatbot")
 graph_builder.add_node("chatbot", chatbot)
-
 
 tool_node = ToolNode(tools=tools)
 graph_builder.add_node("tools", tool_node)
@@ -213,7 +326,7 @@ graph_builder.add_edge("tools", "chatbot")
 memory = InMemorySaver()
 graph = graph_builder.compile(checkpointer=memory)
 
-def run_graph_once_with_interrupt(thread_id: str = "1", current_state: State = None):
+async def run_graph_once_with_interrupt(thread_id: str = "1", current_state: State = None):
     system_message = {
         "role": "system",
         "content": (
@@ -221,7 +334,6 @@ def run_graph_once_with_interrupt(thread_id: str = "1", current_state: State = N
             "- `reply`: your natural language response to the user\n"
             "- `intent`: a single word identifying the user's intent\n\n"
             "You must classify the user's intent using **only one** of the following categories:\n"
-            "- product_inquiry\n"
             "- general_question\n"
             "- greeting\n"
             "- store_info\n"
@@ -231,9 +343,14 @@ def run_graph_once_with_interrupt(thread_id: str = "1", current_state: State = N
             "- store_payment_methods\n"
             "- store_social_media\n"
             "- store_location\n"
+            "- product_list\n"
+            "- product_categories\n"
+            "- product_details\n"
+            "- product_list_by_category\n"
             "- other\n\n"
             "If the user asks for something you cannot answer, call the `human_assistance` tool\n"
             "If the user asks about the store, you may call the appropriate store info tool `get_store_data`.\n"
+            "If the user asks about the products, you may call the appropriate product info tool `get_products_data`.\n"
             "Always respond in this exact JSON format:\n"
             "{\"reply\": \"<your reply here>\", \"intent\": \"<one of the above categories>\"}\n\n"
             "Example:\n"
@@ -243,26 +360,31 @@ def run_graph_once_with_interrupt(thread_id: str = "1", current_state: State = N
     }
     current_state["messages"].append(system_message)
     config = {"configurable": {"thread_id": thread_id}}
-    result = graph.invoke(
-        current_state,
-        config=config,
-    ) 
-    # Normal result with messages
-    if isinstance(result, dict) and "messages" in result:
-        last_message = result["messages"][-1]
-        content = last_message.content
-        try:
-            content = get_json_content(content)
-            return {
-                "content": content.get("reply", "No reply provided."),
-                "intent": content.get("intent", "other")
-            }
-        except Exception as e:
-            print("An error occurred:", e)
-    return {
-        "content": "No reply provided.",
-        "intent": "other"
-    }
+    try:
+        result = await graph.ainvoke(
+            current_state,
+            config=config,
+        ) 
+        print("Result:", result)
+        # Normal result with messages
+        if isinstance(result, dict) and "messages" in result:
+            last_message = result["messages"][-1]
+            content = last_message.content
+            try:
+                content = get_json_content(content)
+                return {
+                    "content": content.get("reply", "No reply provided."),
+                    "intent": content.get("intent", "other")
+                }
+            except Exception as e:
+                print("An error occurred:", e)
+        return {
+            "content": "No reply provided.",
+            "intent": "other"
+        }
+    except Exception as e:
+        print("An error occurred:", e)
+    
 
 def get_json_content(content: str) -> dict:
     print("\n=== CONTENIDO DEL MENSAJE ===")
