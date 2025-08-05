@@ -197,9 +197,9 @@ async def get_products_data(intent: str, tool_call_id: Annotated[str, InjectedTo
         tool_call_id: Unique ID for this tool call
 
     Supported intents:
-    - product_list_by_category: List of products in a specific category
+    - product_list_by_category: List of products in a specific category by category name
     - product_categories: List of all product categories
-    - product_details: Details of a specific product
+    - product_details: Details of a specific product by product id
     - product_list: List of all products
     """
 
