@@ -25,19 +25,9 @@ os.environ["GOOGLE_API_KEY"] = os.getenv("GEMINI_API_KEY")
 os.environ["FIREWORKS_API_KEY"] = os.getenv("FIREWORKS_API_KEY")
 
 llm = init_chat_model("accounts/fireworks/models/qwen3-30b-a3b", model_provider="fireworks")
-# llm = init_chat_model("gemini-2.0-flash", model_provider="google_genai")
 class State(TypedDict):
     messages: Annotated[list, add_messages]
 
-@tool
-def human_assistance2(query: str) -> str:
-    """Use this tool when you cannot answer the user's request and human input is needed."""
-    print("\n=== INTERRUPCIÓN HUMANA REQUERIDA ===")
-    print("Consulta del modelo:", query)
-    human_response = interrupt({"query": query})
-    print("Respuesta del humano:", human_response["data"])
-    return human_response["data"]
-    
 @tool
 def human_assistance(
     name: str,
