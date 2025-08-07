@@ -25,6 +25,13 @@ os.environ["GOOGLE_API_KEY"] = os.getenv("GEMINI_API_KEY")
 os.environ["FIREWORKS_API_KEY"] = os.getenv("FIREWORKS_API_KEY")
 
 llm = init_chat_model("accounts/fireworks/models/qwen3-30b-a3b", model_provider="fireworks")
+
+# llm = init_chat_model(
+#     "qwen3:8b-q4_K_M",
+#     model_provider="openai",
+#     api_key="llm",
+#     base_url="http://localhost:11434/v1"
+# )
 class State(TypedDict):
     messages: Annotated[list, add_messages]
 

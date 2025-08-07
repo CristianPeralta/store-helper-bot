@@ -6,6 +6,7 @@ from app.services.chat import chat_service
 from app.services.message import message_service
 from app.db.models.message import Sender, Intent
 from app.db.silent_session import get_db_session
+from app.langchain.modelClass import StoreAssistant
 
 # Disable all logging
 logging.disable(logging.CRITICAL)
@@ -23,7 +24,15 @@ async def main():
             client_name="Console User",
             client_email="console@example.com"
         )
-        messages = []
+        # Initialize the assistant once
+        assistant = StoreAssistant()
+        # Initialize messages with system message
+        messages = [
+            {
+                "role": "system",
+                "content": assistant.system_message["content"]
+            }
+        ]
         current_state = {
             "messages": messages,
             "name": "",
@@ -46,12 +55,15 @@ async def main():
                         sender=Sender.CLIENT
                     )
 
+                    # Add user message to conversation history
                     messages.append({"role": "user", "content": user_input})
-                    current_state["messages"] = messages
                     
-                    # Get bot response
-                    response = await run_graph_once_with_interrupt(chat.id, current_state)
-                    print("\nBot:", response["content"], "\n")
+                    # Get bot response using the same assistant instance
+                    response = await assistant.get_response_by_thread_id(chat.id, current_state)
+                    print("\nBot:", response["content"])
+                    
+                    # Add assistant's response to conversation history
+                    messages.append({"role": "assistant", "content": response["content"]})
                     
                     # Save bot response
                     await chat_service.add_message(
