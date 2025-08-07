@@ -25,7 +25,7 @@ async def main():
             client_email="console@example.com"
         )
         # Initialize the assistant once
-        assistant = StoreAssistant()
+        assistant = StoreAssistant(db=db)
         # Initialize messages with system message
         messages = [
             {

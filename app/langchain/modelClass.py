@@ -18,6 +18,8 @@ from langgraph.prebuilt import ToolNode, tools_condition
 from langchain_core.messages import ToolMessage
 from app.services.store import StoreService
 from app.services.product import ProductService
+from app.services.chat import chat_service
+from sqlalchemy.ext.asyncio import AsyncSession
 
 os.environ["GOOGLE_API_KEY"] = os.getenv("GEMINI_API_KEY")
 os.environ["FIREWORKS_API_KEY"] = os.getenv("FIREWORKS_API_KEY")
@@ -26,21 +28,9 @@ class State(TypedDict):
     messages: Annotated[list, add_messages]
 
 class StoreAssistant:
-    def __init__(self):
-        self.tools = ToolManager().tools
+    def __init__(self, db: AsyncSession):
+        self.tools = ToolManager(db=db).tools
         self.llm = init_chat_model("accounts/fireworks/models/qwen3-30b-a3b", model_provider="fireworks")
-        # self.llm = init_chat_model(
-        #     "qwen3:8b-q4_K_M",
-        #     model_provider="openai",
-        #     api_key="llm",
-        #     base_url="http://localhost:11434/v1"
-        # )
-        self.llm = init_chat_model(
-            "qwen3:8b-q4_K_M",
-            model_provider="openai",
-            api_key="llm",
-            base_url="http://localhost:11434/v1"
-        )
         self.llm_with_tools = self.llm.bind_tools(self.tools)
         self.graph = self._build_graph()
         self.system_message = {
@@ -159,9 +149,11 @@ class StoreAssistant:
             return {"content": "No reply provided.", "intent": "other"}
 
 class ToolManager:
-    def __init__(self):
+    def __init__(self, db: AsyncSession):
+        self.db = db
         self.store_service = StoreService()
         self.product_service = ProductService()
+        self.chat_service = chat_service
         self.tools = [
             self._create_human_assistance_tool(),
             self._create_store_data_tool(),
@@ -170,7 +162,7 @@ class ToolManager:
     
     def _create_human_assistance_tool(self):
         @tool
-        def human_assistance(
+        async def human_assistance(
             name: str,
             email: str,
             query: str,
@@ -213,6 +205,18 @@ class ToolManager:
                 "query": query.strip(),
                 "status": "pending"
             }
+            try:
+                await self.chat_service.create_chat(db=self.db, client_name=name, client_email=email)
+            except Exception as e:
+                print("An error occurred:", e)
+                return Command(
+                    update={
+                        "messages": [
+                            ToolMessage("Error", tool_call_id=tool_call_id),
+                            ToolMessage("An error occurred while registering your inquiry, please try again later.", tool_call_id=tool_call_id)
+                        ],
+                    }
+                )
             
             # Print for demonstration (in production, this would go to a database/queue)
             print("\n=== NEW INQUIRY REGISTERED ===")
@@ -245,7 +249,7 @@ class ToolManager:
 
     def _create_store_data_tool(self):
         @tool
-        def get_store_data(intent: str, tool_call_id: Annotated[str, InjectedToolCallId]) -> Command:
+        async def get_store_data(intent: str, tool_call_id: Annotated[str, InjectedToolCallId]) -> Command:
             """
             Fetch store-related information based on intent. Supported intents:
             - store_info
@@ -429,4 +433,4 @@ class ToolManager:
         return get_products_data
 
 
-assistant = StoreAssistant()
+assistant = StoreAssistant
