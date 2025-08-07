@@ -138,6 +138,25 @@ class ChatService(BaseService[ChatModel, ChatCreate, ChatUpdate]):
         )
         return result.scalars().all()
 
+    # Lets define a service that will save client_name, client_email, transferred_to_operator, operator_transfer_time
+    async def save_client_info_for_transfer(
+        self, db: AsyncSession, *, chat_id: UUID, client_name: str, client_email: str
+    ) -> Optional[ChatModel]:
+        """Save client information for transfer."""
+        chat = await self.get(db, id=chat_id)
+        if not chat:
+            return None
+        print("INITIATIING SAVE_CLIENT_INFO_FOR_TRANSFER")
+        chat.client_name = client_name
+        chat.client_email = client_email
+        chat.transferred_to_operator = True
+        chat.operator_transfer_time = datetime.now(datetime.timezone.utc)
+        
+        db.add(chat)
+        await db.commit()
+        await db.refresh(chat)
+        print("SAVED CLIENT INFO FOR TRANSFER", chat)
+        return chat
 
 # Create a singleton instance
 chat_service = ChatService(ChatModel)
