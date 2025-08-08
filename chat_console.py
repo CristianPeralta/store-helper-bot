@@ -21,8 +21,6 @@ async def main():
         # Create a new chat
         chat = await chat_service.create_chat(
             db,
-            client_name="Console User",
-            client_email="console@example.com"
         )
         # Initialize the assistant once
         assistant = StoreAssistant(db=db)
