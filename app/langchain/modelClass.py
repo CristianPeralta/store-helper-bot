@@ -33,7 +33,10 @@ class StoreAssistant:
         self.llm = init_chat_model("accounts/fireworks/models/qwen3-30b-a3b", model_provider="fireworks")
         self.llm_with_tools = self.llm.bind_tools(self.tools)
         self.graph = self._build_graph()
-        self.system_message = {
+        self.system_message: Optional[Dict[str, Any]] = None
+
+    def _get_system_message(self, chat_id: str):
+        return {
             "role": "system",
             "content": (
                 "You are an assistant that always responds in JSON format with the following fields:\n"
@@ -53,8 +56,10 @@ class StoreAssistant:
                 "- product_categories\n"
                 "- product_details\n"
                 "- product_list_by_category\n"
+                "- human_assistance\n"
                 "- other\n\n"
                 "If the user asks for something you cannot answer, call the `human_assistance` tool\n"
+                f"In the case of a human assistance, its chat_id parameter will {chat_id}\n"
                 "If the user asks about the store, you may call the appropriate store info tool `get_store_data`.\n"
                 "If the user asks about the products, you may call the appropriate product info tool `get_products_data`.\n"
                 "Always respond in this exact JSON format:\n"
@@ -121,12 +126,41 @@ class StoreAssistant:
         print("⚠️ No se encontró JSON válido.")
         return {"reply": "Invalid or missing JSON", "intent": "other"}
     
-
+    async def _ensure_system_message(self, state: State, chat_id: str) -> None:
+        """
+        Ensure the system message is properly set in the state's messages.
+        
+        Args:
+            state: The current chat state
+            chat_id: The chat ID to use for getting system message
+        """
+        try:
+            # Only set system message if not already set or if messages list is empty
+            if not self.system_message or not state.get("messages") or \
+            (state["messages"] and state["messages"][0] != self.system_message):
+                self.system_message = self._get_system_message(chat_id=chat_id)
+                if state.get("messages"):
+                    state["messages"].insert(0, self.system_message)
+                else:
+                    state["messages"] = [self.system_message]
+        except Exception as e:
+            print(f"Error setting system message: {e}")
+            raise
+    
     async def get_response_by_thread_id(self, thread_id: str = "1", state: State = None):
         state = state or State(messages=[])
-        if not any(msg.get("role") == "system" for msg in state["messages"]):
-            state["messages"].insert(0, self.system_message)
+        
         config = {"configurable": {"thread_id": thread_id}}
+
+        if not state.get("chat_id") and hasattr(self, 'chat_id'):
+            state["chat_id"] = thread_id
+
+        try:
+            await self._ensure_system_message(state, thread_id)
+        except KeyError as e:
+            print(f"Failed to set system message: {e}")
+            return {"content": "Error initializing chat. Please try again.", "intent": "error"}
+
         try:
             result = await self.graph.ainvoke(state, config=config)
             if isinstance(result, dict) and "messages" in result:
@@ -166,7 +200,8 @@ class ToolManager:
             name: str,
             email: str,
             query: str,
-            tool_call_id: Annotated[str, InjectedToolCallId]
+            chat_id: str,
+            tool_call_id: Annotated[str, InjectedToolCallId],
         ) -> Command[Dict[str, Any]]:
             """
             Use this tool to register a user inquiry for human follow-up via email.
@@ -178,11 +213,23 @@ class ToolManager:
                 name: The name of the person making the inquiry
                 email: The email where they can be contacted
                 query: The question or request they have
+                chat_id: The chat_id for the current conversation
                 tool_call_id: Unique ID for this tool call
             
             Returns:
                 Command to update the state with confirmation message
             """
+            print("\n=== TOOL CALL ===")
+            print("Chat ID:", chat_id)
+            if not chat_id:
+                return Command(
+                    update={
+                        "messages": [
+                            ToolMessage("Sorry, now we can't register your inquiry. Please try again later.", tool_call_id=tool_call_id)
+                        ],
+                    }
+                )
+
             if not name or not email or not query:
                 return Command(
                     update={
@@ -192,21 +239,10 @@ class ToolManager:
                         ],
                     }
                 )
-            # In a real implementation, you would store this in a database or queue
-            # For now, we'll just print it and return a confirmation
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             inquiry_id = f"INQ-{int(time.time())}"
             
-            inquiry_details = {
-                "inquiry_id": inquiry_id,
-                "timestamp": timestamp,
-                "name": name.strip(),
-                "email": email.strip(),
-                "query": query.strip(),
-                "status": "pending"
-            }
             try:
-                await self.chat_service.create_chat(db=self.db, client_name=name, client_email=email)
+                await self.chat_service.save_client_info_for_transfer(db=self.db, chat_id=chat_id, client_name=name, client_email=email, query=query)
             except Exception as e:
                 print("An error occurred:", e)
                 return Command(

@@ -27,13 +27,9 @@ async def main():
         # Initialize the assistant once
         assistant = StoreAssistant(db=db)
         # Initialize messages with system message
-        messages = [
-            {
-                "role": "system",
-                "content": assistant.system_message["content"]
-            }
-        ]
+        messages = []
         current_state = {
+            "chat_id": str(chat.id),
             "messages": messages,
             "name": "",
             "email": "",
