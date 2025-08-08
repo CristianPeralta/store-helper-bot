@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID
 
@@ -70,6 +70,12 @@ class ChatService(BaseService[ChatModel, ChatCreate, ChatUpdate]):
         await db.refresh(message)
         return message
 
+    async def get_chat_by_id(
+        self, db: AsyncSession, chat_id: UUID
+    ) -> Optional[ChatModel]:
+        """Get a chat by its ID."""
+        return await self.get(db, id=chat_id)
+    
     async def transfer_to_operator(
         self, db: AsyncSession, *, chat_id: UUID, transfer_data: ChatTransferRequest
     ) -> Optional[ChatModel]:
@@ -140,7 +146,7 @@ class ChatService(BaseService[ChatModel, ChatCreate, ChatUpdate]):
 
     # Lets define a service that will save client_name, client_email, transferred_to_operator, operator_transfer_time
     async def save_client_info_for_transfer(
-        self, db: AsyncSession, *, chat_id: UUID, client_name: str, client_email: str, query: Optional[str] = None
+        self, db: AsyncSession, *, chat_id: str, client_name: str, client_email: str, query: Optional[str] = None
     ) -> Optional[ChatModel]:
         """Save client information for transfer."""
         chat = await self.get(db, id=chat_id)
@@ -150,7 +156,7 @@ class ChatService(BaseService[ChatModel, ChatCreate, ChatUpdate]):
         chat.client_name = client_name
         chat.client_email = client_email
         chat.transferred_to_operator = True
-        chat.operator_transfer_time = datetime.now(datetime.timezone.utc)
+        chat.operator_transfer_time = datetime.now(timezone.utc).replace(tzinfo=None)
         print("Query (SERVICE): ", query)
         db.add(chat)
         await db.commit()

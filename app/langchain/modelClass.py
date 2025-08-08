@@ -32,7 +32,7 @@ class StoreAssistant:
         self.tools = ToolManager(db=db).tools
         self.llm = init_chat_model("accounts/fireworks/models/qwen3-30b-a3b", model_provider="fireworks")
         self.llm_with_tools = self.llm.bind_tools(self.tools)
-        self.graph = self._build_graph()
+        self.graph: StateGraph = self._build_graph()
         self.system_message: Optional[Dict[str, Any]] = None
 
     def _get_system_message(self, chat_id: str):

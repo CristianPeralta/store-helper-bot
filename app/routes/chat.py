@@ -81,3 +81,21 @@ async def get_chat_messages(
             detail="Chat not found"
         )
     return ChatResponseWithMessages.model_validate({"messages": messages}, from_attributes=True)
+
+@router.get("/{chat_id}", response_model=ChatResponse)
+async def get_chat_by_id(
+    chat_id: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get chat by ID.
+    
+    - **chat_id**: UUID of the chat to retrieve
+    """
+    chat = await chat_service.get_chat_by_id(db, chat_id=chat_id)
+    if not chat:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Chat not found"
+        )
+    return ChatResponse.model_validate(chat, from_attributes=True)
