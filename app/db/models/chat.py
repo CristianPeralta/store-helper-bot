@@ -28,6 +28,8 @@ class Chat(Base):
     client_name = Column(String, nullable=True)
     client_email = Column(String, nullable=True)
     initial_intent = Column(SQLEnum(Intent), nullable=True)
+    transfer_inquiry_id = Column(String, nullable=True)
+    transfer_query = Column(String, nullable=True)
     transferred_to_operator = Column(Boolean, default=False)
     operator_transfer_time = Column(DateTime, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

@@ -71,6 +71,8 @@ class ChatInDBBase(ChatBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
     transferred_to_operator: bool = False
+    transfer_inquiry_id: Optional[str] = None
+    transfer_query: Optional[str] = None
     operator_transfer_time: Optional[datetime] = None
 
     class Config:
