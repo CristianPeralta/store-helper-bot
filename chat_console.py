@@ -1,12 +1,9 @@
-import os
-import sys
 import logging
-from app.langchain.model import run_graph_once_with_interrupt
 from app.services.chat import chat_service
 from app.services.message import message_service
 from app.db.models.message import Sender, Intent
 from app.db.silent_session import get_db_session
-from app.langchain.modelClass import StoreAssistant
+from app.langchain.model import StoreAssistant
 
 # Disable all logging
 logging.disable(logging.CRITICAL)
