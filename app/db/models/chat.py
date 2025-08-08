@@ -18,6 +18,7 @@ class Intent(PyEnum):
     PRODUCT_CATEGORIES = "product_categories"
     PRODUCT_DETAILS = "product_details"
     PRODUCT_LIST_BY_CATEGORY = "product_list_by_category"
+    HUMAN_ASSISTANCE = "human_assistance"
     OTHER = "other"
 
 class Chat(Base):
