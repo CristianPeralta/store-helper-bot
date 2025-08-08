@@ -234,7 +234,6 @@ class ToolManager:
                 return Command(
                     update={
                         "messages": [
-                            ToolMessage("Success", tool_call_id=tool_call_id),
                             ToolMessage("Please provide a name, email, and query.", tool_call_id=tool_call_id)
                         ],
                     }
@@ -242,13 +241,19 @@ class ToolManager:
             inquiry_id = f"INQ-{int(time.time())}"
             
             try:
-                await self.chat_service.save_client_info_for_transfer(db=self.db, chat_id=chat_id, client_name=name, client_email=email, query=query)
+                await self.chat_service.save_client_info_for_transfer(
+                    db=self.db,
+                    chat_id=chat_id,
+                    client_name=name,
+                    client_email=email,
+                    query=query,
+                    inquiry_id=inquiry_id
+                )
             except Exception as e:
                 print("An error occurred:", e)
                 return Command(
                     update={
                         "messages": [
-                            ToolMessage("Error", tool_call_id=tool_call_id),
                             ToolMessage("An error occurred while registering your inquiry, please try again later.", tool_call_id=tool_call_id)
                         ],
                     }
@@ -276,7 +281,6 @@ class ToolManager:
                     "email": email,
                     "last_inquiry_id": inquiry_id,
                     "messages": [
-                        ToolMessage("Success", tool_call_id=tool_call_id),
                         ToolMessage(response, tool_call_id=tool_call_id)
                     ],
                 }
