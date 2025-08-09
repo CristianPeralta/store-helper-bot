@@ -83,7 +83,7 @@ class MessageInDBBase(MessageBase):
         description="Intent of the message"
     )
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Properties to return to client

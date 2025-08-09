@@ -19,11 +19,11 @@ class BaseSchema(BaseModel):
     """Base schema with common fields and configuration."""
     
     class Config:
-        orm_mode = True
+        from_attributes = True
         json_encoders = {
             datetime: lambda v: v.isoformat(),
         }
-        allow_population_by_field_name = True
+        validate_by_name = True
         use_enum_values = True
         arbitrary_types_allowed = True
 
@@ -54,6 +54,6 @@ class ListResponse(BaseModel, Generic[ModelType]):
         json_encoders = {
             datetime: lambda v: v.isoformat(),
         }
-        allow_population_by_field_name = True
+        validate_by_name = True
         use_enum_values = True
         arbitrary_types_allowed = True

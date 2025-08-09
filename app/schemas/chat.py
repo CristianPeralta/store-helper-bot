@@ -76,7 +76,7 @@ class ChatInDBBase(ChatBase):
     operator_transfer_time: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Properties to return to client
