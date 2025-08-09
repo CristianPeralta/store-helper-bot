@@ -1,6 +1,7 @@
 import os
 import re
 import time
+import logging
 from langchain.chat_models import init_chat_model
 from typing import Optional
 import json
@@ -20,6 +21,8 @@ from app.services.product import ProductService
 from app.services.chat import chat_service
 from sqlalchemy.ext.asyncio import AsyncSession
 
+logger = logging.getLogger(__name__)
+
 os.environ["GOOGLE_API_KEY"] = os.getenv("GEMINI_API_KEY")
 os.environ["FIREWORKS_API_KEY"] = os.getenv("FIREWORKS_API_KEY")
 
@@ -27,6 +30,7 @@ class State(TypedDict):
     messages: Annotated[list, add_messages]
 
 class StoreAssistant:
+    """Assistant that orchestrates LLM + tools through a LangGraph."""
     def __init__(self, db: AsyncSession):
         self.tools = ToolManager(db=db).tools
         self.llm = init_chat_model("accounts/fireworks/models/qwen3-30b-a3b", model_provider="fireworks")
@@ -34,7 +38,7 @@ class StoreAssistant:
         self.graph: StateGraph = self._build_graph()
         self.system_message: Optional[Dict[str, Any]] = None
 
-    def _get_system_message(self, chat_id: str):
+    def _get_system_message(self, chat_id: str) -> Dict[str, Any]:
         return {
             "role": "system",
             "content": (
@@ -58,7 +62,7 @@ class StoreAssistant:
                 "- human_assistance\n"
                 "- other\n\n"
                 "If the user asks for something you cannot answer, call the `human_assistance` tool\n"
-                f"In the case of a human assistance, its chat_id parameter will {chat_id}\n"
+                f"In the case of human assistance, the chat_id parameter will be {chat_id}\n"
                 "If the user asks about the store, you may call the appropriate store info tool `get_store_data`.\n"
                 "If the user asks about the products, you may call the appropriate product info tool `get_products_data`.\n"
                 "Always respond in this exact JSON format:\n"
@@ -93,18 +97,17 @@ class StoreAssistant:
                 "intent": content.get("intent", "other")
             }
         except Exception as e:
-            print("An error occurred:", e)
+            logger.exception("Failed to parse model JSON response")
             return {
                 "content": "No reply provided.",
                 "intent": "other"
             }
     
     def get_json_content(self, content: str) -> dict:
-        print("\n=== CONTENIDO DEL MENSAJE ===")
-        print(content)
+        logger.debug("LLM raw content: %s", content)
 
         if not content or not content.strip():
-            print("⚠️ ALERTA: contenido vacío")
+            logger.warning("Empty content returned by the LLM")
             return {"reply": "Empty response", "intent": "other"}
 
         # Search for all possible JSON blocks, even if they are inside 
@@ -122,7 +125,7 @@ class StoreAssistant:
             except json.JSONDecodeError:
                 continue  # ignore malformed blocks
 
-        print("⚠️ No se encontró JSON válido.")
+        logger.warning("No valid JSON found in LLM output")
         return {"reply": "Invalid or missing JSON", "intent": "other"}
     
     async def _ensure_system_message(self, state: State, chat_id: str) -> None:
@@ -143,10 +146,10 @@ class StoreAssistant:
                 else:
                     state["messages"] = [self.system_message]
         except Exception as e:
-            print(f"Error setting system message: {e}")
+            logger.exception("Error setting system message")
             raise
     
-    async def get_response_by_thread_id(self, thread_id: str = "1", state: State = None):
+    async def get_response_by_thread_id(self, thread_id: str = "1", state: State = None) -> Dict[str, Any]:
         state = state or State(messages=[])
         
         config = {"configurable": {"thread_id": thread_id}}
@@ -157,7 +160,7 @@ class StoreAssistant:
         try:
             await self._ensure_system_message(state, thread_id)
         except KeyError as e:
-            print(f"Failed to set system message: {e}")
+            logger.exception("Failed to set system message")
             return {"content": "Error initializing chat. Please try again.", "intent": "error"}
 
         try:
@@ -172,16 +175,17 @@ class StoreAssistant:
                         "intent": content.get("intent", "other")
                     }
                 except Exception as e:
-                    print("An error occurred:", e)
+                    logger.exception("Failed to extract JSON content from model reply")
                     return {"content": "No reply provided.", "intent": "other"}
             else:
-                print("No messages found in result.")
+                logger.warning("No messages found in LangGraph result")
                 return {"content": "No reply provided.", "intent": "other"}
         except Exception as e:
-            print("An error occurred here:", e)
+            logger.exception("LangGraph invocation failed")
             return {"content": "No reply provided.", "intent": "other"}
 
 class ToolManager:
+    """Registers and exposes tool functions for the assistant."""
     def __init__(self, db: AsyncSession):
         self.db = db
         self.store_service = StoreService()
@@ -218,8 +222,7 @@ class ToolManager:
             Returns:
                 Command to update the state with confirmation message
             """
-            print("\n=== TOOL CALL ===")
-            print("Chat ID:", chat_id)
+            logger.info("human_assistance tool called | chat_id=%s", chat_id)
             if not chat_id:
                 return Command(
                     update={
@@ -249,7 +252,7 @@ class ToolManager:
                     inquiry_id=inquiry_id
                 )
             except Exception as e:
-                print("An error occurred:", e)
+                logger.exception("Failed to save client info for transfer")
                 return Command(
                     update={
                         "messages": [
@@ -258,13 +261,11 @@ class ToolManager:
                     }
                 )
             
-            # Print for demonstration (in production, this would go to a database/queue)
-            print("\n=== NEW INQUIRY REGISTERED ===")
-            print(f"Inquiry ID: {inquiry_id}")
-            print(f"Name: {name}")
-            print(f"Email: {email}")
-            print(f"Query: {query}")
-            print(f"Status: pending\n")
+            # Log for demonstration (in production, this would go to a database/queue)
+            logger.info(
+                "NEW INQUIRY REGISTERED | id=%s name=%s email=%s status=pending",
+                inquiry_id, name, email,
+            )
             
             # Prepare the response to the user
             response = (
@@ -309,7 +310,7 @@ class ToolManager:
                 "store_social_media": self.store_service.get_social_media_links,
                 "store_location": self.store_service.get_location
             }
-            print(f"\n=== DEBUG: get_store_data called with intent: {intent} ===\n")
+            logger.info("get_store_data called | intent=%s", intent)
             if intent not in mapping:
                 return Command(update={
                     "messages": [
@@ -318,10 +319,10 @@ class ToolManager:
                 })
 
             try:
-                print("CALLING STORE SERVICE")
+                logger.debug("Calling store service")
                 # Call the synchronous store service method directly
                 result = mapping[intent]()
-                print("STORE SERVICE RETURNED")
+                logger.debug("Store service returned successfully")
                 
                 # Handle Pydantic models by converting to dict
                 if hasattr(result, 'dict'):
@@ -357,6 +358,7 @@ class ToolManager:
                 error_msg = str(e)
                 if hasattr(e, 'detail'):
                     error_msg = e.detail
+                logger.exception("Error fetching store data: %s", error_msg)
                 return Command(update={
                     "messages": [
                         ToolMessage(f"Error fetching store data: {error_msg}", tool_call_id=tool_call_id)
@@ -414,7 +416,7 @@ class ToolManager:
                     ]
                 })
 
-            print(f"Getting products data for intent: {intent}")
+            logger.info("get_products_data called | intent=%s", intent)
 
             try:
                 # Call the appropriate async function with parameters
@@ -463,7 +465,7 @@ class ToolManager:
                 error_msg = str(e)
                 if hasattr(e, 'detail'):
                     error_msg = e.detail
-                print(f"Error in get_products_data: {error_msg}")
+                logger.exception("get_products_data failed: %s", error_msg)
                 return Command(update={
                     "messages": [
                         ToolMessage(f"Error fetching product data: {error_msg}", tool_call_id=tool_call_id)
