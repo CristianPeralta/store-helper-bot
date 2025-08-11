@@ -77,6 +77,27 @@ flowchart TD
 ```
 ---
 
+## LangGraph State Machine
+
+This project leverages **LangGraph** to manage conversation flows through a state machine pattern. The graph-based approach allows for more flexible and maintainable conversation handling, especially for complex multi-turn interactions.
+
+<p align="center">
+  <img src="langgraph_diagrama.png" alt="LangGraph State Machine" />
+</p>
+
+The diagram above illustrates our conversation flow, where:
+- **Nodes** represent different states or actions in the conversation
+- **Edges** define the possible transitions between states
+- **Conditional logic** determines the flow based on user input and conversation context
+
+This architecture provides several benefits:
+- Clear visualization of conversation flows
+- Easy modification and extension of conversation paths
+- Better handling of complex, branching conversations
+- Improved maintainability and debugging
+
+---
+
 ## Getting Started
 
 ### 1. Clone the repo
