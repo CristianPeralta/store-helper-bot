@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.schemas.chat import ChatResponse, ChatCreate, ChatListResponse, ChatResponseWithMessages
 from app.services.chat import chat_service
+from app.services.message import message_service
 
 router = APIRouter(prefix="/chats", tags=["chats"])
 
@@ -74,7 +75,7 @@ async def get_chat_messages(
     - **skip**: Optional number of records to skip
     - **limit**: Optional number of records to return
     """
-    messages = await chat_service.get_chat_messages(db, chat_id=chat_id, skip=skip, limit=limit)
+    messages = await message_service.get_chat_messages(db, chat_id=chat_id, skip=skip, limit=limit)
     if not messages or len(messages) == 0:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

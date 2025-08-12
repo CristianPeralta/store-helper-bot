@@ -1,0 +1,43 @@
+from typing import List, Optional
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.db.session import get_db
+from app.schemas.message import MessageResponse, MessageListQuery
+from app.services.message import message_service
+
+router = APIRouter(prefix="/messages", tags=["messages"])
+
+@router.get("/", response_model=List[MessageResponse])
+async def get_chat_messages(
+    chat_id: Optional[str] = Query(None, description="Filter by chat ID"),
+    sort_by: Optional[str] = Query("created_at", description="Field to sort by (e.g., 'created_at', 'id')"),
+    sort_order: str = Query("asc", description="Sort order: 'asc' or 'desc'", regex="^(asc|desc)$"),
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(20, ge=1, le=100, description="Number of items per page"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get messages with filtering, sorting and pagination.
+    
+    - **chat_id**: Filter by chat ID (optional)
+    - **sort_by**: Field to sort by (default: 'created_at')
+    - **sort_order**: Sort order: 'asc' or 'desc' (default: 'desc')
+    - **page**: Page number (default: 1)
+    - **page_size**: Number of items per page (default: 20, max: 100)
+    """
+    query_params = MessageListQuery(
+        chat_id=chat_id,
+        sort_by=sort_by,
+        sort_order=sort_order,
+        page=page,
+        page_size=page_size
+    )
+    
+    messages = await message_service.get_messages(
+        db, 
+        query_params=query_params,
+    )
+    return messages

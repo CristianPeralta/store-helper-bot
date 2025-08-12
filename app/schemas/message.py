@@ -133,7 +133,7 @@ class MessageCreateResponse(ResponseSchema):
 
 class MessageListQuery(BaseModel):
     """Query parameters for listing messages."""
-    chat_id: Optional[UUID] = Field(
+    chat_id: Optional[str] = Field(
         None,
         description="Filter messages by chat ID"
     )
@@ -152,6 +152,15 @@ class MessageListQuery(BaseModel):
     end_date: Optional[datetime] = Field(
         None,
         description="Filter messages created before this date"
+    )
+    sort_by: Optional[str] = Field(
+        "created_at",
+        description="Field to sort by (e.g., 'created_at', 'id')"
+    )
+    sort_order: str = Field(
+        "asc",
+        description="Sort order: 'asc' for ascending, 'desc' for descending",
+        pattern="^(asc|desc)$"
     )
     page: int = Field(
         1,

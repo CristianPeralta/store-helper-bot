@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
-from sqlalchemy import select, and_
+from sqlalchemy import select, Column
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.message import Message as MessageModel, Sender, Intent
@@ -19,7 +19,7 @@ class MessageService(BaseService[MessageModel, MessageCreate, MessageUpdate]):
         *,
         query_params: MessageListQuery
     ) -> List[MessageModel]:
-        """Get messages with filtering and pagination."""
+        """Get messages with filtering, sorting and pagination."""
         query = select(self.model)
         
         # Apply filters
@@ -38,10 +38,16 @@ class MessageService(BaseService[MessageModel, MessageCreate, MessageUpdate]):
         if query_params.end_date:
             query = query.where(self.model.created_at <= query_params.end_date)
         
+        # Apply sorting
+        sort_field: Column = getattr(self.model, query_params.sort_by, self.model.created_at)
+        if query_params.sort_order.lower() == 'asc':
+            query = query.order_by(sort_field.asc())
+        else:
+            query = query.order_by(sort_field.desc())
+        
         # Apply pagination
         result = await db.execute(
-            query.order_by(self.model.created_at.desc())
-                 .offset((query_params.page - 1) * query_params.page_size)
+            query.offset((query_params.page - 1) * query_params.page_size)
                  .limit(query_params.page_size)
         )
         
