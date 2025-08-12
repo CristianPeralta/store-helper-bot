@@ -53,12 +53,6 @@ class ChatService(BaseService[ChatModel, ChatCreate, ChatUpdate]):
         await db.commit()
         await db.refresh(message)
         return message
-
-    async def get_chat_by_id(
-        self, db: AsyncSession, chat_id: UUID
-    ) -> Optional[ChatModel]:
-        """Get a chat by its ID."""
-        return await self.get(db, id=chat_id)
     
     async def transfer_to_operator(
         self, db: AsyncSession, *, chat_id: UUID, transfer_data: ChatTransferRequest
