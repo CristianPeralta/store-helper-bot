@@ -14,35 +14,6 @@ from . import BaseService
 class ChatService(BaseService[ChatModel, ChatCreate, ChatUpdate]):
     """Service for managing chats and related operations."""
 
-    async def add_message(
-        self,
-        db: AsyncSession,
-        *,
-        chat_id: str,
-        content: str,
-        sender: Sender,
-        intent: Intent = None
-    ) -> MessageModel:
-        """Add a message to a chat."""
-        message = MessageModel(
-            chat_id=chat_id,
-            content=content,
-            sender=sender,
-            intent=intent
-        )
-        
-        # Update chat's updated_at timestamp
-        chat = await self.get(db, id=chat_id)
-        if chat:
-            chat.updated_at = datetime.utcnow()
-            db.add(chat)
-        
-        db.add(message)
-        await db.commit()
-        await db.refresh(message)
-        return message
-
-
     # Lets define a service that will save client_name, client_email, transferred_to_operator, operator_transfer_time
     async def transfer_to_operator(
         self, db: AsyncSession, *, chat_id: str, client_name: str, client_email: str, query: Optional[str] = None, inquiry_id: Optional[str] = None
