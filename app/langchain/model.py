@@ -41,21 +41,21 @@ class StoreAssistant:
                 "- `reply`: your natural language response to the user\n"
                 "- `intent`: a single word identifying the user's intent\n\n"
                 "You must classify the user's intent using **only one** of the following categories:\n"
-                "- general_question\n"
-                "- greeting\n"
-                "- store_info\n"
-                "- store_hours\n"
-                "- store_contact\n"
-                "- store_promotions\n"
-                "- store_payment_methods\n"
-                "- store_social_media\n"
-                "- store_location\n"
-                "- product_list\n"
-                "- product_categories\n"
-                "- product_details\n"
-                "- product_list_by_category\n"
-                "- human_assistance\n"
-                "- other\n\n"
+                "- GENERAL_QUESTION\n"
+                "- GREETING\n"
+                "- STORE_INFO\n"
+                "- STORE_HOURS\n"
+                "- STORE_CONTACT\n"
+                "- STORE_PROMOTIONS\n"
+                "- STORE_PAYMENT_METHODS\n"
+                "- STORE_SOCIAL_MEDIA\n"
+                "- STORE_LOCATION\n"
+                "- PRODUCT_LIST\n"
+                "- PRODUCT_CATEGORIES\n"
+                "- PRODUCT_DETAILS\n"
+                "- PRODUCT_LIST_BY_CATEGORY\n"
+                "- HUMAN_ASSISTANCE\n"
+                "- OTHER\n\n"
                 "If the user asks for something you cannot answer, call the `human_assistance` tool\n"
                 f"In the case of human assistance, the chat_id parameter will be {chat_id}\n"
                 "If the user asks about the store, you may call the appropriate store info tool `get_store_data`.\n"
@@ -64,7 +64,7 @@ class StoreAssistant:
                 "{\"reply\": \"<your reply here>\", \"intent\": \"<one of the above categories>\"}\n\n"
                 "Example:\n"
                 "User: 'Hi there!'\n"
-                "Response: {\"reply\": \"Hello! How can I assist you today?\", \"intent\": \"greeting\"}"
+                "Response: {\"reply\": \"Hello! How can I assist you today?\", \"intent\": \"GREETING\"}"
             )
         }
         
@@ -89,13 +89,13 @@ class StoreAssistant:
             content = self.get_json_content(content)
             return {
                 "content": content.get("reply", "No reply provided."),
-                "intent": content.get("intent", "other")
+                "intent": content.get("intent", "OTHER")
             }
         except Exception as e:
             logger.exception("Failed to parse model JSON response")
             return {
                 "content": "No reply provided.",
-                "intent": "other"
+                "intent": "OTHER"
             }
     
     def get_json_content(self, content: str) -> dict:
@@ -103,7 +103,7 @@ class StoreAssistant:
 
         if not content or not content.strip():
             logger.warning("Empty content returned by the LLM")
-            return {"reply": "Empty response", "intent": "other"}
+            return {"reply": "Empty response", "intent": "OTHER"}
 
         # Search for all possible JSON blocks, even if they are inside 
         bloques = re.findall(r'```json\s*(\{.*?\})\s*```', content, re.DOTALL)
@@ -121,7 +121,7 @@ class StoreAssistant:
                 continue  # ignore malformed blocks
 
         logger.warning("No valid JSON found in LLM output")
-        return {"reply": "Invalid or missing JSON", "intent": "other"}
+        return {"reply": "Invalid or missing JSON", "intent": "OTHER"}
     
     async def _ensure_system_message(self, state: State, chat_id: str) -> None:
         """
@@ -156,7 +156,7 @@ class StoreAssistant:
             await self._ensure_system_message(state, thread_id)
         except KeyError as e:
             logger.exception("Failed to set system message")
-            return {"content": "Error initializing chat. Please try again.", "intent": "error"}
+            return {"content": "Error initializing chat. Please try again.", "intent": "OTHER"}
 
         try:
             result = await self.graph.ainvoke(state, config=config)
@@ -167,17 +167,17 @@ class StoreAssistant:
                     content = self.get_json_content(content)
                     return {
                         "content": content.get("reply", "No reply provided."),
-                        "intent": content.get("intent", "other")
+                        "intent": content.get("intent", "OTHER")
                     }
                 except Exception as e:
                     logger.exception("Failed to extract JSON content from model reply")
-                    return {"content": "No reply provided.", "intent": "other"}
+                    return {"content": "No reply provided.", "intent": "OTHER"}
             else:
                 logger.warning("No messages found in LangGraph result")
-                return {"content": "No reply provided.", "intent": "other"}
+                return {"content": "No reply provided.", "intent": "OTHER"}
         except Exception as e:
             logger.exception("LangGraph invocation failed")
-            return {"content": "No reply provided.", "intent": "other"}
+            return {"content": "No reply provided.", "intent": "OTHER"}
 
 
 assistant = StoreAssistant

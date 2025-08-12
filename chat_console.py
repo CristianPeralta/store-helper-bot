@@ -2,8 +2,7 @@ import logging
 from app.services.chat import chat_service
 from app.services.message import message_service
 from app.schemas.chat import ChatCreate
-from app.db.models.message import Intent
-from app.schemas.message import MessageCreate, SenderEnum
+from app.schemas.message import MessageCreate, SenderEnum, MessageUpdate, IntentEnum
 from app.db.silent_session import get_db_session
 from app.langchain.model import StoreAssistant
 
@@ -67,17 +66,17 @@ async def _process_turn(
 
     # Validate response structure defensively
     content = response.get("content") if isinstance(response, dict) else None
-    intent_value = response.get("intent") if isinstance(response, dict) else Intent.OTHER
+    intent_value = response.get("intent") if isinstance(response, dict) else IntentEnum.OTHER
     if not isinstance(content, str) or not content:
         content = "I couldn't generate a response. Please try again or rephrase your question."
         logger.warning("Assistant returned empty or invalid content: %s", response)
 
     try:
         # Try to coerce the model-provided intent to our Enum (by value)
-        intent_enum = intent_value if isinstance(intent_value, Intent) else Intent(intent_value)
+        intent_enum = IntentEnum(intent_value.upper())
     except Exception:
         # If casting fails, default to OTHER
-        intent_enum = Intent.OTHER
+        intent_enum = IntentEnum.OTHER
 
     print("\nBot:", content)
 
@@ -94,10 +93,12 @@ async def _process_turn(
             intent=intent_enum,
         )
     )
-    # await message_service.update_message_intent(
-    #    db,
-    #    message_id=user_message.id,
-    #    new_intent=intent_enum,
+    # await message_service.update(
+    #   db,
+    #   db_obj=user_message,
+    #   obj_in=MessageUpdate(
+    #       intent=IntentEnum(intent_enum),
+    #   ),
     # )
 
     # Commit after each exchange

@@ -1,13 +1,10 @@
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import Optional
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.db.models.chat import Chat as ChatModel
-from app.db.models.message import Message as MessageModel, Sender, Intent
-from app.schemas.chat import ChatCreate, ChatUpdate, ChatTransferRequest
+from app.schemas.chat import ChatCreate, ChatUpdate
 from . import BaseService
 
 
@@ -22,7 +19,6 @@ class ChatService(BaseService[ChatModel, ChatCreate, ChatUpdate]):
         chat = await self.get(db, id=chat_id)
         if not chat:
             return None
-        print("INITIATIING SAVE_CLIENT_INFO_FOR_TRANSFER")
         chat.client_name = client_name
         chat.client_email = client_email
         chat.transferred_to_operator = True
@@ -32,7 +28,6 @@ class ChatService(BaseService[ChatModel, ChatCreate, ChatUpdate]):
         db.add(chat)
         await db.commit()
         await db.refresh(chat)
-        print("SAVED CLIENT INFO FOR TRANSFER", chat)
         return chat
 
 # Create a singleton instance

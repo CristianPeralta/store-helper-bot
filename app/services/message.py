@@ -1,10 +1,10 @@
 from datetime import datetime
-from typing import List, Optional, Any
+from typing import List
 
 from sqlalchemy import select, Column, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models.message import Message as MessageModel, Sender, Intent
+from app.db.models.message import Message as MessageModel
 from app.db.models.chat import Chat as ChatModel
 from app.schemas.message import MessageCreate, MessageUpdate, MessageListQuery
 from . import BaseService

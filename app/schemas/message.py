@@ -15,21 +15,21 @@ class SenderEnum(str, Enum):
 
 class IntentEnum(str, Enum):
     """Enum for message intents."""
-    GENERAL_QUESTION = "general_question"
-    GREETING = "greeting"
-    STORE_INFO = "store_info"
-    STORE_HOURS = "store_hours"
-    STORE_CONTACT = "store_contact"
-    STORE_PROMOTIONS = "store_promotions"
-    STORE_PAYMENT_METHODS = "store_payment_methods"
-    STORE_SOCIAL_MEDIA = "store_social_media"
-    STORE_LOCATION = "store_location"
-    PRODUCT_LIST = "product_list"
-    PRODUCT_CATEGORIES = "product_categories"
-    PRODUCT_DETAILS = "product_details"
-    PRODUCT_LIST_BY_CATEGORY = "product_list_by_category"
-    HUMAN_ASSISTANCE = "human_assistance"
-    OTHER = "other"
+    GENERAL_QUESTION = "GENERAL_QUESTION"
+    GREETING = "GREETING"
+    STORE_INFO = "STORE_INFO"
+    STORE_HOURS = "STORE_HOURS"
+    STORE_CONTACT = "STORE_CONTACT"
+    STORE_PROMOTIONS = "STORE_PROMOTIONS"
+    STORE_PAYMENT_METHODS = "STORE_PAYMENT_METHODS"
+    STORE_SOCIAL_MEDIA = "STORE_SOCIAL_MEDIA"
+    STORE_LOCATION = "STORE_LOCATION"
+    PRODUCT_LIST = "PRODUCT_LIST"
+    PRODUCT_CATEGORIES = "PRODUCT_CATEGORIES"
+    PRODUCT_DETAILS = "PRODUCT_DETAILS"
+    PRODUCT_LIST_BY_CATEGORY = "PRODUCT_LIST_BY_CATEGORY"
+    HUMAN_ASSISTANCE = "HUMAN_ASSISTANCE"
+    OTHER = "OTHER"
 
 
 # Shared properties
@@ -40,6 +40,10 @@ class MessageBase(BaseSchema):
         min_length=1,
         max_length=2000,
         description="The message content"
+    )
+    intent: Optional[IntentEnum] = Field(
+        None,
+        description="The intent of the message"
     )
     sender: SenderEnum = Field(
         ...,
