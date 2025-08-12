@@ -42,6 +42,11 @@ class BaseService(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         db.add(db_obj)
         await db.commit()
         await db.refresh(db_obj)
+        
+        # Call post-create hook if it exists
+        if hasattr(self, 'after_create'):
+            await self.after_create(db, db_obj, obj_in)
+            
         return db_obj
 
     async def update(

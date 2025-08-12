@@ -1,10 +1,11 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Any
 
-from sqlalchemy import select, Column
+from sqlalchemy import select, Column, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.message import Message as MessageModel, Sender, Intent
+from app.db.models.chat import Chat as ChatModel
 from app.schemas.message import MessageCreate, MessageUpdate, MessageListQuery
 from . import BaseService
 
@@ -64,6 +65,21 @@ class MessageService(BaseService[MessageModel, MessageCreate, MessageUpdate]):
             .limit(1)
         )
         return result.scalars().first()
+
+
+    async def after_create(
+        self, 
+        db: AsyncSession, 
+        db_obj: MessageModel, 
+        obj_in: MessageCreate
+    ) -> None:
+        """Post-create hook to update the chat's updated_at timestamp."""
+        await db.execute(
+            update(ChatModel)
+            .where(ChatModel.id == obj_in.chat_id)
+            .values(updated_at=datetime.now())
+        )
+        await db.commit()
 
 # Create a singleton instance
 message_service = MessageService(MessageModel)
