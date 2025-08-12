@@ -1,7 +1,6 @@
 from datetime import datetime
 from enum import Enum
 from typing import List, Optional
-from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -67,7 +66,7 @@ class ChatUpdate(ChatBase):
 # Properties shared by models stored in DB
 class ChatInDBBase(ChatBase):
     """Base schema for chat data stored in the database."""
-    id: UUID
+    id: str
     created_at: datetime
     updated_at: Optional[datetime] = None
     transferred_to_operator: bool = False

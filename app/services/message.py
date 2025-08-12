@@ -1,6 +1,5 @@
 from datetime import datetime
 from typing import List, Optional
-from uuid import UUID
 
 from sqlalchemy import select, Column
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -55,7 +54,7 @@ class MessageService(BaseService[MessageModel, MessageCreate, MessageUpdate]):
 
 
     async def get_latest_message(
-        self, db: AsyncSession, chat_id: UUID
+        self, db: AsyncSession, chat_id: str
     ) -> Optional[MessageModel]:
         """Get the most recent message in a chat."""
         result = await db.execute(

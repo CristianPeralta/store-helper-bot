@@ -1,4 +1,3 @@
-from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -72,7 +71,7 @@ async def get_chat_messages(
     """
     Get chat messages by ID.
     
-    - **chat_id**: UUID of the chat to retrieve
+    - **chat_id**: String of the chat to retrieve
     - **skip**: Optional number of records to skip
     - **limit**: Optional number of records to return
     """
@@ -100,7 +99,7 @@ async def get_chat_by_id(
     """
     Get chat by ID.
     
-    - **chat_id**: UUID of the chat to retrieve
+    - **chat_id**: String of the chat to retrieve
     """
     chat = await chat_service.get(db, id=chat_id)
     if not chat:
