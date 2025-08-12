@@ -1,8 +1,9 @@
 import logging
 from app.services.chat import chat_service
 from app.services.message import message_service
-from app.db.models.message import Sender, Intent
 from app.schemas.chat import ChatCreate
+from app.db.models.message import Intent
+from app.schemas.message import MessageCreate, SenderEnum
 from app.db.silent_session import get_db_session
 from app.langchain.model import StoreAssistant
 
@@ -49,11 +50,13 @@ async def _process_turn(
 ) -> None:
     """Process a single user-assistant exchange with persistence and error handling."""
     # Save user message
-    user_message = await chat_service.add_message(
+    user_message = await message_service.create(
         db,
-        chat_id=chat.id,
-        content=user_input,
-        sender=Sender.CLIENT,
+        obj_in=MessageCreate(
+            chat_id=chat.id,
+            content=user_input,
+            sender=SenderEnum.CLIENT,
+        )
     )
 
     # Add user message to conversation history
@@ -82,18 +85,20 @@ async def _process_turn(
     messages.append({"role": "assistant", "content": content})
 
     # Save bot response and update user's message intent
-    await chat_service.add_message(
+    await message_service.create(
         db,
-        chat_id=chat.id,
-        content=content,
-        sender=Sender.BOT,
-        intent=intent_enum,
+        obj_in=MessageCreate(
+            chat_id=chat.id,
+            content=content,
+            sender=SenderEnum.BOT,
+            intent=intent_enum,
+        )
     )
-    await message_service.update_message_intent(
-        db,
-        message_id=user_message.id,
-        new_intent=intent_enum,
-    )
+    # await message_service.update_message_intent(
+    #    db,
+    #    message_id=user_message.id,
+    #    new_intent=intent_enum,
+    # )
 
     # Commit after each exchange
     await db.commit()

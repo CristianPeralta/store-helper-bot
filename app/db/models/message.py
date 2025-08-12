@@ -7,8 +7,8 @@ from app.db import Base
 import uuid
 
 class Sender(PyEnum):
-    CLIENT = "client"
-    BOT = "bot"
+    CLIENT = "CLIENT"
+    BOT = "BOT"
 
 class Intent(PyEnum):
     GENERAL_QUESTION = "general_question"

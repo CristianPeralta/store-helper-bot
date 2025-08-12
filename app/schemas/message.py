@@ -1,7 +1,6 @@
 from datetime import datetime
 from enum import Enum
 from typing import Optional
-from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -10,8 +9,8 @@ from app.schemas import BaseSchema, ResponseSchema
 
 class SenderEnum(str, Enum):
     """Enum for message senders."""
-    CLIENT = "client"
-    BOT = "bot"
+    CLIENT = "CLIENT"
+    BOT = "BOT"
 
 
 class IntentEnum(str, Enum):
@@ -51,7 +50,7 @@ class MessageBase(BaseSchema):
 # Properties to receive on message creation
 class MessageCreate(MessageBase):
     """Schema for creating a new message."""
-    chat_id: UUID = Field(
+    chat_id: str = Field(
         ...,
         description="ID of the chat this message belongs to"
     )
@@ -75,8 +74,8 @@ class MessageUpdate(BaseSchema):
 # Properties shared by models stored in DB
 class MessageInDBBase(MessageBase):
     """Base schema for message data stored in the database."""
-    id: UUID
-    chat_id: UUID
+    id: str
+    chat_id: str
     created_at: datetime
     intent: Optional[IntentEnum] = Field(
         None,

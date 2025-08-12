@@ -1,6 +1,5 @@
 from datetime import datetime, timezone
 from typing import List, Optional
-from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,22 +14,11 @@ from . import BaseService
 class ChatService(BaseService[ChatModel, ChatCreate, ChatUpdate]):
     """Service for managing chats and related operations."""
 
-    async def get_with_messages(
-        self, db: AsyncSession, chat_id: UUID
-    ) -> Optional[ChatModel]:
-        """Get a chat with its messages."""
-        result = await db.execute(
-            select(self.model)
-            .options(selectinload(self.model.messages))
-            .where(self.model.id == str(chat_id))
-        )
-        return result.scalars().first()
-
     async def add_message(
         self,
         db: AsyncSession,
         *,
-        chat_id: UUID,
+        chat_id: str,
         content: str,
         sender: Sender,
         intent: Intent = None
