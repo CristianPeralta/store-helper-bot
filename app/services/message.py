@@ -54,19 +54,6 @@ class MessageService(BaseService[MessageModel, MessageCreate, MessageUpdate]):
         return result.scalars().all()
 
 
-    async def get_latest_message(
-        self, db: AsyncSession, chat_id: str
-    ) -> Optional[MessageModel]:
-        """Get the most recent message in a chat."""
-        result = await db.execute(
-            select(self.model)
-            .where(self.model.chat_id == chat_id)
-            .order_by(self.model.created_at.desc())
-            .limit(1)
-        )
-        return result.scalars().first()
-
-
     async def after_create(
         self, 
         db: AsyncSession, 
