@@ -23,6 +23,10 @@ os.environ["FIREWORKS_API_KEY"] = os.getenv("FIREWORKS_API_KEY")
 
 class State(TypedDict):
     messages: Annotated[list, add_messages]
+    chat_id: str
+    name: str
+    email: str
+    last_inquiry_id: Optional[str]
 
 class StoreAssistant:
     """Assistant that orchestrates LLM + tools through a LangGraph."""
@@ -156,7 +160,11 @@ class StoreAssistant:
             await self._ensure_system_message(state, thread_id)
         except KeyError as e:
             logger.exception("Failed to set system message")
-            return {"content": "Error initializing chat. Please try again.", "intent": "OTHER"}
+            return {
+                "content": "Error initializing chat. Please try again.",
+                "intent": "OTHER",
+                "state": state
+            }
 
         try:
             result = await self.graph.ainvoke(state, config=config)
@@ -167,17 +175,18 @@ class StoreAssistant:
                     content = self.get_json_content(content)
                     return {
                         "content": content.get("reply", "No reply provided."),
-                        "intent": content.get("intent", "OTHER")
+                        "intent": content.get("intent", "OTHER"),
+                        "state": state
                     }
                 except Exception as e:
                     logger.exception("Failed to extract JSON content from model reply")
-                    return {"content": "No reply provided.", "intent": "OTHER"}
+                    return {"content": "No reply provided.", "intent": "OTHER", "state": state}
             else:
                 logger.warning("No messages found in LangGraph result")
-                return {"content": "No reply provided.", "intent": "OTHER"}
+                return {"content": "No reply provided.", "intent": "OTHER", "state": state}
         except Exception as e:
             logger.exception("LangGraph invocation failed")
-            return {"content": "No reply provided.", "intent": "OTHER"}
+            return {"content": "No reply provided.", "intent": "OTHER", "state": state}
 
 
 assistant = StoreAssistant

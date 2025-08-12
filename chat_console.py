@@ -4,7 +4,7 @@ from app.services.message import message_service
 from app.schemas.chat import ChatCreate
 from app.schemas.message import MessageCreate, SenderEnum, MessageUpdate, IntentEnum
 from app.db.silent_session import get_db_session
-from app.langchain.model import StoreAssistant
+from app.langchain.model import StoreAssistant, State
 
 """
 Console runner for the Store Helper chatbot.
@@ -42,9 +42,7 @@ async def _read_input(prompt: str) -> str:
 async def _process_turn(
     assistant: StoreAssistant,
     db,
-    chat,
-    messages: list,
-    current_state: dict,
+    state: State,
     user_input: str,
 ) -> None:
     """Process a single user-assistant exchange with persistence and error handling."""
@@ -52,17 +50,17 @@ async def _process_turn(
     user_message = await message_service.create(
         db,
         obj_in=MessageCreate(
-            chat_id=chat.id,
+            chat_id=state["chat_id"],
             content=user_input,
             sender=SenderEnum.CLIENT,
         )
     )
 
     # Add user message to conversation history
-    messages.append({"role": "user", "content": user_input})
+    state["messages"].append({"role": "user", "content": user_input})
 
     # Get bot response using the same assistant instance
-    response = await assistant.get_response_by_thread_id(chat.id, current_state)
+    response = await assistant.get_response_by_thread_id(state["chat_id"], state)
 
     # Validate response structure defensively
     content = response.get("content") if isinstance(response, dict) else None
@@ -81,13 +79,13 @@ async def _process_turn(
     print("\nBot:", content)
 
     # Add assistant's response to conversation history
-    messages.append({"role": "assistant", "content": content})
+    state["messages"].append({"role": "assistant", "content": content})
 
     # Save bot response and update user's message intent
     await message_service.create(
         db,
         obj_in=MessageCreate(
-            chat_id=chat.id,
+            chat_id=state["chat_id"],
             content=content,
             sender=SenderEnum.BOT,
             intent=intent_enum,
@@ -117,10 +115,9 @@ async def main() -> None:
         # Initialize the assistant once
         assistant = StoreAssistant(db=db)
         # Initialize messages with system message
-        messages = []
-        current_state = {
+        state = {
             "chat_id": str(chat.id),
-            "messages": messages,
+            "messages": [],
             "name": "",
             "email": "",
             "last_inquiry_id": None
@@ -141,7 +138,7 @@ async def main() -> None:
                         print("(Tip) You sent an empty message. Please type your question.")
                         continue
 
-                    await _process_turn(assistant, db, chat, messages, current_state, user_input)
+                    await _process_turn(assistant, db, state, user_input)
 
                 except KeyboardInterrupt:
                     print(f"\nInterrupted. Your chat ID is: {chat.id}")
