@@ -79,22 +79,6 @@ class ChatService(BaseService[ChatModel, ChatCreate, ChatUpdate]):
         await db.refresh(chat)
         return chat
 
-    async def get_active_chats(
-        self, db: AsyncSession, *, include_transferred: bool = False, skip: int = 0, limit: int = 100
-    ) -> List[ChatModel]:
-        """Get active chats, optionally including transferred ones."""
-        query = select(self.model).where(
-            self.model.transferred_to_operator == include_transferred
-        )
-        
-        result = await db.execute(
-            query.order_by(self.model.updated_at.desc())
-                 .offset(skip)
-                 .limit(limit)
-                 .options(selectinload(self.model.messages))
-        )
-        return result.scalars().all()
-
     async def get_chat_messages(
         self, db: AsyncSession, chat_id: UUID, skip: int = 0, limit: int = 100,
         sort_by: str = "created_at"
@@ -107,20 +91,6 @@ class ChatService(BaseService[ChatModel, ChatCreate, ChatUpdate]):
         # Sort messages by the specified field
         sorted_messages = sorted(chat.messages, key=lambda x: getattr(x, sort_by))
         return sorted_messages[skip:skip + limit]
-
-    async def get_chat_by_client_email(
-        self, db: AsyncSession, email: str, skip: int = 0, limit: int = 100
-    ) -> List[ChatModel]:
-        """Get chats by client email."""
-        result = await db.execute(
-            select(self.model)
-            .where(self.model.client_email == email)
-            .order_by(self.model.updated_at.desc())
-            .offset(skip)
-            .limit(limit)
-            .options(selectinload(self.model.messages))
-        )
-        return result.scalars().all()
 
     # Lets define a service that will save client_name, client_email, transferred_to_operator, operator_transfer_time
     async def save_client_info_for_transfer(

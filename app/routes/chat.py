@@ -45,7 +45,7 @@ async def get_all_chats(
     - **skip**: Optional number of records to skip
     - **limit**: Optional number of records to return
     """
-    chats = await chat_service.get_active_chats(
+    chats = await chat_service.get_multi(
         db,
         skip=skip,
         limit=limit
