@@ -3,7 +3,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-from app.schemas.chat import ChatResponse, ChatCreate, ChatListResponse, ChatResponseWithMessages
+from app.schemas.chat import ChatResponse, ChatCreate, ChatListResponse, ChatMessagesResponse
+from app.schemas.message import MessageListQuery
 from app.services.chat import chat_service
 from app.services.message import message_service
 
@@ -61,9 +62,9 @@ async def get_all_chats(
     )
     return chat_list_response
 
-@router.get("/{chat_id}/messages", response_model=ChatResponseWithMessages)
+@router.get("/{chat_id}/messages", response_model=ChatMessagesResponse)
 async def get_chat_messages(
-    chat_id: UUID,
+    chat_id: str,
     skip: int = 0,
     limit: int = 100,
     db: AsyncSession = Depends(get_db)
@@ -75,13 +76,21 @@ async def get_chat_messages(
     - **skip**: Optional number of records to skip
     - **limit**: Optional number of records to return
     """
-    messages = await message_service.get_chat_messages(db, chat_id=chat_id, skip=skip, limit=limit)
-    if not messages or len(messages) == 0:
+    chat = await chat_service.get(db, id=chat_id)
+    if not chat:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Chat not found"
         )
-    return ChatResponseWithMessages.model_validate({"messages": messages}, from_attributes=True)
+    query_params = MessageListQuery(
+        chat_id=chat_id,
+        sort_by="created_at",
+        sort_order="asc",
+        skip=skip,
+        limit=limit
+    )
+    messages = await message_service.get_messages(db, query_params=query_params)
+    return ChatMessagesResponse.model_validate({"messages": messages}, from_attributes=True)
 
 @router.get("/{chat_id}", response_model=ChatResponse)
 async def get_chat_by_id(

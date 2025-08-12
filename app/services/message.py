@@ -47,28 +47,12 @@ class MessageService(BaseService[MessageModel, MessageCreate, MessageUpdate]):
         
         # Apply pagination
         result = await db.execute(
-            query.offset((query_params.page - 1) * query_params.page_size)
-                 .limit(query_params.page_size)
+            query.offset(query_params.skip)
+                 .limit(query_params.limit)
         )
         
         return result.scalars().all()
 
-    async def get_chat_messages(
-        self,
-        db: AsyncSession,
-        chat_id: UUID,
-        skip: int = 0,
-        limit: int = 100
-    ) -> List[MessageModel]:
-        """Get messages for a specific chat with pagination."""
-        result = await db.execute(
-            select(self.model)
-            .where(self.model.chat_id == chat_id)
-            .order_by(self.model.created_at.asc())
-            .offset(skip)
-            .limit(limit)
-        )
-        return result.scalars().all()
 
     async def get_latest_message(
         self, db: AsyncSession, chat_id: UUID

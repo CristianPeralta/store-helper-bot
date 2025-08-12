@@ -162,14 +162,14 @@ class MessageListQuery(BaseModel):
         description="Sort order: 'asc' for ascending, 'desc' for descending",
         pattern="^(asc|desc)$"
     )
-    page: int = Field(
-        1,
-        ge=1,
-        description="Page number for pagination"
+    skip: int = Field(
+        0,
+        ge=0,
+        description="Number of items to skip"
     )
-    page_size: int = Field(
-        20,
+    limit: int = Field(
+        100,
         ge=1,
         le=100,
-        description="Number of items per page"
+        description="Number of items to return"
     )

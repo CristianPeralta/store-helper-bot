@@ -53,19 +53,7 @@ class ChatService(BaseService[ChatModel, ChatCreate, ChatUpdate]):
         await db.commit()
         await db.refresh(message)
         return message
-    
-    async def get_chat_messages(
-        self, db: AsyncSession, chat_id: UUID, skip: int = 0, limit: int = 100,
-        sort_by: str = "created_at"
-    ) -> List[MessageModel]:
-        """Get messages for a specific chat."""
-        chat = await self.get_with_messages(db, chat_id)
-        if not chat:
-            return []
-        
-        # Sort messages by the specified field
-        sorted_messages = sorted(chat.messages, key=lambda x: getattr(x, sort_by))
-        return sorted_messages[skip:skip + limit]
+
 
     # Lets define a service that will save client_name, client_email, transferred_to_operator, operator_transfer_time
     async def transfer_to_operator(

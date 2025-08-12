@@ -84,8 +84,8 @@ class ChatResponse(ChatInDBBase, ResponseSchema):
     """Schema for chat data returned to the client."""
     pass
 
-class ChatResponseWithMessages(BaseModel):
-    """Schema for chat data returned to the client with messages."""
+class ChatMessagesResponse(BaseModel):
+    """Schema for chat messages returned to the client."""
     messages: List[MessageResponse] = Field(
         default_factory=list,
         description="List of messages"
