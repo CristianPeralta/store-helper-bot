@@ -73,7 +73,7 @@ class ToolManager:
             inquiry_id = f"INQ-{int(time.time())}"
             
             try:
-                await self.chat_service.save_client_info_for_transfer(
+                await self.chat_service.transfer_to_operator(
                     db=self.db,
                     chat_id=chat_id,
                     client_name=name,

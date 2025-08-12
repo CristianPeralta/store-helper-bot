@@ -92,7 +92,7 @@ async def get_chat_by_id(
     
     - **chat_id**: UUID of the chat to retrieve
     """
-    chat = await chat_service.get_chat_by_id(db, chat_id=chat_id)
+    chat = await chat_service.get(db, id=chat_id)
     if not chat:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

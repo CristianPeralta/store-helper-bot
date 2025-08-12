@@ -54,31 +54,6 @@ class ChatService(BaseService[ChatModel, ChatCreate, ChatUpdate]):
         await db.refresh(message)
         return message
     
-    async def transfer_to_operator(
-        self, db: AsyncSession, *, chat_id: UUID, transfer_data: ChatTransferRequest
-    ) -> Optional[ChatModel]:
-        """Transfer a chat to an operator."""
-        chat = await self.get(db, id=chat_id)
-        if not chat:
-            return None
-
-        chat.transferred_to_operator = True
-        chat.operator_transfer_time = datetime.utcnow()
-        
-        # Add a system message about the transfer
-        await self.add_message(
-            db,
-            chat_id=chat_id,
-            content=f"Chat transferred to operator: {transfer_data.operator_email}",
-            sender=Sender.BOT,
-            intent=Intent.GENERAL_QUESTION
-        )
-        
-        db.add(chat)
-        await db.commit()
-        await db.refresh(chat)
-        return chat
-
     async def get_chat_messages(
         self, db: AsyncSession, chat_id: UUID, skip: int = 0, limit: int = 100,
         sort_by: str = "created_at"
@@ -93,7 +68,7 @@ class ChatService(BaseService[ChatModel, ChatCreate, ChatUpdate]):
         return sorted_messages[skip:skip + limit]
 
     # Lets define a service that will save client_name, client_email, transferred_to_operator, operator_transfer_time
-    async def save_client_info_for_transfer(
+    async def transfer_to_operator(
         self, db: AsyncSession, *, chat_id: str, client_name: str, client_email: str, query: Optional[str] = None, inquiry_id: Optional[str] = None
     ) -> Optional[ChatModel]:
         """Save client information for transfer."""
