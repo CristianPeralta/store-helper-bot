@@ -66,46 +66,5 @@ class MessageService(BaseService[MessageModel, MessageCreate, MessageUpdate]):
         )
         return result.scalars().first()
 
-    async def create_message(
-        self,
-        db: AsyncSession,
-        *,
-        chat_id: UUID,
-        content: str,
-        sender: Sender,
-        intent: Intent = None
-    ) -> MessageModel:
-        """Create a new message in a chat."""
-        message = self.model(
-            chat_id=chat_id,
-            content=content,
-            sender=sender,
-            intent=intent
-        )
-        
-        db.add(message)
-        await db.commit()
-        await db.refresh(message)
-        return message
-
-    async def update_message_intent(
-        self,
-        db: AsyncSession,
-        *,
-        message_id: UUID,
-        new_intent: Intent
-    ) -> Optional[MessageModel]:
-        """Update the intent of a message."""
-        message = await self.get(db, id=message_id)
-        if not message:
-            return None
-            
-        message.intent = new_intent
-        db.add(message)
-        await db.commit()
-        await db.refresh(message)
-        return message
-
-
 # Create a singleton instance
 message_service = MessageService(MessageModel)
