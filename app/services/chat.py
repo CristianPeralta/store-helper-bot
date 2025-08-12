@@ -26,22 +26,6 @@ class ChatService(BaseService[ChatModel, ChatCreate, ChatUpdate]):
         )
         return result.scalars().first()
 
-    async def create_chat(
-        self, db: AsyncSession, *, client_name: str = None, client_email: str = None
-    ) -> ChatModel:
-        """Create a new chat with optional client information."""
-        chat_data = {}
-        if client_name:
-            chat_data["client_name"] = client_name
-        if client_email:
-            chat_data["client_email"] = client_email
-            
-        db_chat = self.model(**chat_data)
-        db.add(db_chat)
-        await db.commit()
-        await db.refresh(db_chat)
-        return db_chat
-
     async def add_message(
         self,
         db: AsyncSession,

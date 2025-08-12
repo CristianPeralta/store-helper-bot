@@ -2,6 +2,7 @@ import logging
 from app.services.chat import chat_service
 from app.services.message import message_service
 from app.db.models.message import Sender, Intent
+from app.schemas.chat import ChatCreate
 from app.db.silent_session import get_db_session
 from app.langchain.model import StoreAssistant
 
@@ -103,8 +104,9 @@ async def main() -> None:
     # Get a new async session from our silent session factory
     async with get_db_session() as db:
         # Create a new chat
-        chat = await chat_service.create_chat(
+        chat = await chat_service.create(
             db,
+            obj_in=ChatCreate()
         )
         # Initialize the assistant once
         assistant = StoreAssistant(db=db)
