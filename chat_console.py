@@ -93,13 +93,13 @@ async def _process_turn(
             intent=intent_enum,
         )
     )
-    # await message_service.update(
-    #   db,
-    #   db_obj=user_message,
-    #   obj_in=MessageUpdate(
-    #       intent=IntentEnum(intent_enum),
-    #   ),
-    # )
+    await message_service.update(
+        db,
+        db_obj=user_message,
+        obj_in=MessageUpdate(
+            intent=intent_enum,
+        ),
+    )
 
     # Commit after each exchange
     await db.commit()
