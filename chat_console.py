@@ -5,6 +5,7 @@ from app.schemas.chat import ChatCreate
 from app.schemas.message import MessageCreate, SenderEnum, MessageUpdate, IntentEnum
 from app.db.silent_session import get_db_session
 from app.langchain.model import StoreAssistant, State
+from app.services.chat_processor import ChatProcessor
 
 """
 Console runner for the Store Helper chatbot.
@@ -112,8 +113,10 @@ async def main() -> None:
             db,
             obj_in=ChatCreate()
         )
-        # Initialize the assistant once
-        assistant = StoreAssistant(db=db)
+        
+        # Initialize the chat processor with the database session
+        chat_processor = ChatProcessor(db=db)
+        
         # Initialize messages with system message
         state = {
             "chat_id": str(chat.id),
@@ -138,7 +141,8 @@ async def main() -> None:
                         print("(Tip) You sent an empty message. Please type your question.")
                         continue
 
-                    await _process_turn(assistant, db, state, user_input)
+                    # Process the message through the chat processor
+                    await chat_processor.process_message(state, user_input)
 
                 except KeyboardInterrupt:
                     print(f"\nInterrupted. Your chat ID is: {chat.id}")
