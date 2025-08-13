@@ -72,7 +72,7 @@ class ChatProcessor:
 
     async def _process_assistant_response(
         self,
-        state: Dict[str, Any],
+        state: State,
         user_message: Any,
         response: Dict[str, Any]
     ) -> Dict[str, Any]:
@@ -81,6 +81,8 @@ class ChatProcessor:
         state["messages"].append({"role": "assistant", "content": content})
 
         await self._save_bot_response(state, content, intent_enum)
+
+        await self._update_user_intent(user_message, intent_enum)
 
         print("\nBot:", content)
 
@@ -108,7 +110,7 @@ class ChatProcessor:
 
     async def _save_bot_response(
         self,
-        state: Dict[str, Any],
+        state: State,
         content: str,
         intent: IntentEnum
     ) -> None:
