@@ -61,6 +61,24 @@ async def get_all_chats(
     )
     return chat_list_response
 
+@router.get("/{chat_id}", response_model=ChatResponse)
+async def get_chat_by_id(
+    chat_id: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get chat by ID.
+    
+    - **chat_id**: String of the chat to retrieve
+    """
+    chat = await chat_service.get(db, id=chat_id)
+    if not chat:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Chat not found"
+        )
+    return ChatResponse.model_validate(chat, from_attributes=True)
+
 @router.get("/{chat_id}/messages", response_model=ChatMessagesResponse)
 async def get_chat_messages(
     chat_id: str,
@@ -90,21 +108,3 @@ async def get_chat_messages(
     )
     messages = await message_service.get_messages(db, query_params=query_params)
     return ChatMessagesResponse.model_validate({"messages": messages}, from_attributes=True)
-
-@router.get("/{chat_id}", response_model=ChatResponse)
-async def get_chat_by_id(
-    chat_id: str,
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Get chat by ID.
-    
-    - **chat_id**: String of the chat to retrieve
-    """
-    chat = await chat_service.get(db, id=chat_id)
-    if not chat:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Chat not found"
-        )
-    return ChatResponse.model_validate(chat, from_attributes=True)
