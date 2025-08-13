@@ -13,7 +13,7 @@ router = APIRouter(prefix="/messages", tags=["messages"])
 async def get_messages(
     chat_id: Optional[str] = Query(None, description="Filter by chat ID"),
     sort_by: Optional[str] = Query("created_at", description="Field to sort by (e.g., 'created_at', 'id')"),
-    sort_order: str = Query("asc", description="Sort order: 'asc' or 'desc'", regex="^(asc|desc)$"),
+    sort_order: str = Query("asc", description="Sort order: 'asc' or 'desc'", pattern="^(asc|desc)$"),
     skip: int = Query(0, description="Number of items to skip"),
     limit: int = Query(100, ge=1, le=100, description="Number of items to return"),
     db: AsyncSession = Depends(get_db),
