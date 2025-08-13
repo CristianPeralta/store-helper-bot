@@ -1,8 +1,8 @@
 """Tests for the MessageService class."""
 import pytest
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch, call
-from sqlalchemy import Column, Integer, String, DateTime, Enum, func
+from unittest.mock import AsyncMock, MagicMock
+from sqlalchemy import Column, Integer, String, DateTime, Enum
 from sqlalchemy.orm import declarative_base
 from app.services.message import MessageService
 from app.schemas.message import MessageListQuery, SenderEnum, IntentEnum

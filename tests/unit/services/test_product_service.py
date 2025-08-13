@@ -1,7 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 from fastapi import HTTPException, status
-from datetime import datetime
 
 from app.schemas.product import Product, ProductListResponse, CategoryListResponse
 from app.services.product import ProductService

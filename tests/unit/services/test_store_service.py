@@ -1,11 +1,9 @@
 """Unit tests for StoreService."""
 import json
 from datetime import date, timedelta
-from pathlib import Path
 from unittest.mock import patch, mock_open
 
 import pytest
-from fastapi import HTTPException, status
 
 from app.schemas.store import (
     StoreResponse,

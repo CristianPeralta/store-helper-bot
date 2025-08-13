@@ -1,7 +1,7 @@
 """Pytest configuration and fixtures."""
 import pytest
 from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 from sqlalchemy import Column, Integer, DateTime, String
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.ext.asyncio import AsyncSession

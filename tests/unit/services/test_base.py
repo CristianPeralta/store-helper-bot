@@ -1,9 +1,7 @@
 """Tests for the BaseService class."""
 import pytest
-from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, patch, ANY
+from unittest.mock import MagicMock
 from pydantic import BaseModel
-from sqlalchemy import select
 
 class MockCreateSchema(BaseModel):
     """Mock schema for testing."""

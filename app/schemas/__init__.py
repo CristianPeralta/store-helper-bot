@@ -5,7 +5,7 @@ This package contains Pydantic models used for request/response validation
 and serialization of data between the API and the database.
 """
 from datetime import datetime
-from typing import Generic, List, TypeVar, Any, Dict, Optional
+from typing import Generic, List, TypeVar, Any, Optional
 
 from pydantic import BaseModel, ConfigDict, field_serializer
 
