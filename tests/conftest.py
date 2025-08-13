@@ -7,6 +7,13 @@ import sys
 from typing import AsyncGenerator, AsyncIterator, Generator
 from unittest.mock import AsyncMock
 
+# Import the get_db function
+from app.db.session import get_db
+
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+from httpx import AsyncClient
+
 import pytest
 import pytest_asyncio
 from sqlalchemy import Column, DateTime, Integer, String, event
@@ -62,35 +69,42 @@ async def db_session(engine):
     Create a fresh database session for each test.
     Uses a connection that's closed after the test.
     """
-    # Create a session factory
-    async_session = async_sessionmaker(
-        bind=engine,
+    connection = await engine.connect()
+    
+    # Begin a non-ORM transaction
+    transaction = await connection.begin()
+    
+    # Create a session with the connection
+    TestingSessionLocal = sessionmaker(
+        bind=connection,
         class_=AsyncSession,
         expire_on_commit=False,
         autoflush=False,
         autocommit=False
     )
     
-    # Create a new session
-    session = async_session()
-    
-    # Begin a transaction that will be rolled back after the test
-    transaction = await session.begin()
+    # Create the session
+    session = TestingSessionLocal()
     
     try:
         yield session
     finally:
-        # Always roll back the transaction to clean up
-        await transaction.rollback()
+        # Clean up
         await session.close()
+        await transaction.rollback()
+        await connection.close()
 
 @pytest_asyncio.fixture(scope="function", autouse=True)
-async def setup_db(engine):
+async def setup_db(engine, db_session):
     """Set up the database before each test and clean up after."""
-    # Drop all tables before each test
+    # Drop all tables and recreate them
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
+    
+    # Ensure the session is committed and closed after setup
+    await db_session.commit()
+    await db_session.close()
 
 @pytest.fixture
 def session_factory(engine):
@@ -193,14 +207,48 @@ async def test_chat(db_session):
 
 # Fixture for creating a test message
 @pytest.fixture
-async def test_message(test_chat, db_session):
+def test_message(test_chat, db_session):
     """Create a test message instance."""
     message = Message(
         chat_id=test_chat.id,
         content="Test message",
         sender=Sender.CLIENT,
-        intent=MessageIntent.GENERAL_QUESTION
+        intent=MessageIntent.GREETING
     )
     db_session.add(message)
-    await db_session.commit()
+    db_session.commit()
+    db_session.refresh(message)
     return message
+
+# Create a test FastAPI app
+@pytest.fixture
+def app() -> FastAPI:
+    """Create a test FastAPI application."""
+    from app.main import app as fastapi_app
+    return fastapi_app
+
+# Create a test client
+@pytest.fixture
+def client(app: FastAPI) -> TestClient:
+    """Create a test client for the FastAPI application."""
+    return TestClient(app)
+
+# Create an async test client
+@pytest_asyncio.fixture
+async def async_client(app: FastAPI, db_session) -> AsyncGenerator[AsyncClient, None]:
+    """Create an async test client for the FastAPI application."""
+    async def get_test_db():
+        try:
+            yield db_session
+        finally:
+            # Don't close the session here, let the fixture handle it
+            pass
+    
+    # Override the database dependency
+    app.dependency_overrides[get_db] = get_test_db
+    
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        yield ac
+    
+    # Clear overrides
+    app.dependency_overrides.clear()
