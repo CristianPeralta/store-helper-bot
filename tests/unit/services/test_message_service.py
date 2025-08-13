@@ -7,12 +7,15 @@ from sqlalchemy.orm import declarative_base
 from app.services.message import MessageService
 from app.schemas.message import MessageListQuery, SenderEnum, IntentEnum
 
-# Create a base class for test models
+# Create a base class for test models with a name that doesn't start with 'Test'
+# and add __test__ = False to prevent pytest from collecting it
 TestBase = declarative_base()
+TestBase.__test__ = False  # Prevent pytest from collecting the base class
 
 class TestMessage(TestBase):
     """Test message model for MessageService tests."""
     __tablename__ = 'test_messages'
+    __test__ = False  # Tell pytest this is not a test class
     
     id = Column(Integer, primary_key=True, index=True)
     chat_id = Column(Integer, nullable=False)

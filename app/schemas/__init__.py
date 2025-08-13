@@ -5,9 +5,9 @@ This package contains Pydantic models used for request/response validation
 and serialization of data between the API and the database.
 """
 from datetime import datetime
-from typing import Generic, List, TypeVar
+from typing import Generic, List, TypeVar, Any, Dict, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, field_serializer
 
 # Type variables for generic schema types
 ModelType = TypeVar("ModelType")
@@ -17,15 +17,20 @@ UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
 
 class BaseSchema(BaseModel):
     """Base schema with common fields and configuration."""
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        validate_by_name=True,
+        use_enum_values=True,
+        str_strip_whitespace=True,
+        arbitrary_types_allowed=True,
+    )
     
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-        }
-        validate_by_name = True
-        use_enum_values = True
-        arbitrary_types_allowed = True
+    @field_serializer('created_at', 'updated_at', check_fields=False)
+    def serialize_dt(self, dt: Optional[datetime], _info: Any = None) -> Optional[str]:
+        if dt is None:
+            return None
+        return dt.isoformat()
 
 
 class ResponseSchema(BaseSchema):
@@ -50,10 +55,17 @@ class ListResponse(BaseModel, Generic[ModelType]):
     page_size: int
     pages: int
 
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
+    model_config = ConfigDict(
+        validate_by_name=True,
+        use_enum_values=True,
+        arbitrary_types_allowed=True,
+        json_schema_extra={
+            "example": {
+                "items": [],
+                "total": 0,
+                "page": 1,
+                "page_size": 10,
+                "pages": 0
+            }
         }
-        validate_by_name = True
-        use_enum_values = True
-        arbitrary_types_allowed = True
+    )

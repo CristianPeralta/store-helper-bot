@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 from app.schemas import BaseSchema, ResponseSchema
 from app.schemas.message import MessageResponse
@@ -67,15 +67,32 @@ class ChatUpdate(ChatBase):
 class ChatInDBBase(ChatBase):
     """Base schema for chat data stored in the database."""
     id: str
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-    transferred_to_operator: bool = False
+    initial_intent: Optional[IntentEnum] = None
     transfer_inquiry_id: Optional[str] = None
     transfer_query: Optional[str] = None
+    transferred_to_operator: bool = False
     operator_transfer_time: Optional[datetime] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+        from_attributes=True,
+        populate_by_name=True,
+        json_schema_extra={
+            "example": {
+                "id": "chat_123",
+                "client_name": "John Doe",
+                "client_email": "john.doe@example.com",
+                "initial_intent": "GREETING",
+                "transferred_to_operator": False,
+                "transfer_inquiry_id": "inquiry_123",
+                "transfer_query": "What is the store's address?",
+                "operator_transfer_time": "2023-01-01T00:00:00",
+                "created_at": "2023-01-01T00:00:00",
+                "updated_at": "2023-01-01T00:00:00",
+            }
+        }
+    )
 
 
 # Properties to return to client

@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 from app.schemas import BaseSchema, ResponseSchema
 
@@ -81,12 +81,21 @@ class MessageInDBBase(MessageBase):
     id: str
     chat_id: str
     created_at: datetime
-    intent: Optional[IntentEnum] = Field(
-        None,
-        description="Intent of the message"
+    
+    model_config = ConfigDict(
+        from_attributes=True,
+        populate_by_name=True,
+        json_schema_extra={
+            "example": {
+                "id": "msg_123",
+                "chat_id": "chat_123",
+                "content": "Hello, world!",
+                "sender": "CLIENT",
+                "intent": "GENERAL_QUESTION",
+                "created_at": "2023-01-01T00:00:00"
+            }
+        }
     )
-    class Config:
-        from_attributes = True
 
 
 # Properties to return to client
