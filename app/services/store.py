@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional, Union
 from datetime import date
 
 from fastapi import HTTPException, status
@@ -16,16 +16,34 @@ from app.schemas.store import (
 class StoreService:
     """Service for managing static store information."""
     
-    def __init__(self, data_file: str = None):
-        """Initialize the store service with data file path."""
-        if data_file is None:
-            # Default to the data file in the app/data directory
-            base_dir = Path(__file__).parent.parent
-            self.data_file = base_dir / "data" / "store.json"
+    _instance = None
+    _initialized = False
+    
+    def __new__(cls, data_file: Optional[Union[str, Path]] = None, _data: Optional[Dict] = None):
+        """Implement singleton pattern with optional test override."""
+        if cls._instance is None or _data is not None:
+            cls._instance = super(StoreService, cls).__new__(cls)
+        return cls._instance
+    
+    def __init__(self, data_file: Optional[Union[str, Path]] = None, _data: Optional[Dict] = None):
+        """Initialize the store service with data file path or direct data."""
+        if getattr(self, '_initialized', False) and _data is None:
+            return
+            
+        if _data is not None:
+            # For testing - use provided data directly
+            self._store_data = _data
         else:
-            self.data_file = Path(data_file)
+            if data_file is None:
+                # Default to the data file in the app/data directory
+                base_dir = Path(__file__).parent.parent
+                self.data_file = base_dir / "data" / "store.json"
+            else:
+                self.data_file = Path(data_file)
+            
+            self._store_data = self._load_store_data()
         
-        self._store_data = self._load_store_data()
+        self._initialized = True
     
     def _load_store_data(self) -> Dict[str, Any]:
         """Load store data from the JSON file."""
