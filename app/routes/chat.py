@@ -22,10 +22,9 @@ async def create_chat(
     - **client_email**: Optional email of the client (in request body)
     """
     try:
-        chat = await chat_service.create_chat(
+        chat = await chat_service.create(
             db,
-            client_name=chat_data.client_name,
-            client_email=chat_data.client_email
+            obj_in=ChatCreate(**chat_data.model_dump())
         )
         return ChatResponse.model_validate(chat, from_attributes=True)
     except Exception as e:

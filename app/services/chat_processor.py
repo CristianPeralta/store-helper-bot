@@ -5,7 +5,6 @@ from app.schemas.message import MessageCreate, SenderEnum, MessageUpdate, Intent
 from app.services.message import message_service
 from app.langchain.model import StoreAssistant, State
 import logging
-from app.db.silent_session import get_db_session
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +93,7 @@ class ChatProcessor:
     def _parse_response(self, response: Dict[str, Any]) -> Tuple[str, IntentEnum]:
         """Parse and validate the assistant's response."""
         content = response.get("content", "")
-        intent_value = response.get("intent", IntentEnum.OTHER)
+        intent_value: IntentEnum = response.get("intent", IntentEnum.OTHER)
         
         if not isinstance(content, str) or not content:
             content = "I couldn't generate a response. Please try again or rephrase your question."
