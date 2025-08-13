@@ -19,20 +19,43 @@ class ProductService:
         self.base_url = base_url
         self.timeout = 10.0  # seconds
     
-    async def _make_request(self, endpoint: str) -> dict:
-        """Make a GET request to the FakeStore API."""
+    async def _make_request(self, endpoint: str, params: Optional[dict] = None) -> dict:
+        """Make a GET request to the FakeStore API.
+        
+        Args:
+            endpoint: The API endpoint path
+            params: Optional query parameters
+            
+        Returns:
+            The JSON response as a dictionary
+            
+        Raises:
+            HTTPException: If there's an error with the request or response
+        """
         url = f"{self.base_url}/{endpoint}"
         try:
             async with httpx.AsyncClient() as client:
-                response = await client.get(url, timeout=self.timeout)
+                response = await client.get(url, params=params, timeout=self.timeout)
+                
+                if response.status_code == 404:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="Product not found"
+                    )
+                    
                 response.raise_for_status()
                 return response.json()
+                
         except httpx.HTTPStatusError as e:
-            logger.error(f"HTTP error from FakeStore API: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail="Error communicating with the products service"
+            status_code = (
+                status.HTTP_404_NOT_FOUND 
+                if e.response.status_code == 404 
+                else status.HTTP_502_BAD_GATEWAY
             )
+            detail = "Product not found" if e.response.status_code == 404 else "Error communicating with the products service"
+            logger.error(f"HTTP error from FakeStore API: {e}")
+            raise HTTPException(status_code=status_code, detail=detail)
+            
         except httpx.RequestError as e:
             logger.error(f"Request to FakeStore API failed: {e}")
             raise HTTPException(
@@ -65,7 +88,7 @@ class ProductService:
         if sort:
             params['sort'] = sort
         
-        data = await self._make_request(endpoint)
+        data = await self._make_request(endpoint, params=params)
         
         # Filter by category if specified
         if category:
@@ -90,13 +113,11 @@ class ProductService:
             
         Returns:
             The requested Product
+            
+        Raises:
+            HTTPException: If the product is not found or there's an error
         """
         data = await self._make_request(f"products/{product_id}")
-        if not data:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Product not found"
-            )
         return Product(**data)
     
     async def get_categories(self) -> CategoryListResponse:

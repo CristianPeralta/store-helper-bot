@@ -47,14 +47,18 @@ class StoreService:
     
     def _load_store_data(self) -> Dict[str, Any]:
         """Load store data from the JSON file."""
+        if not hasattr(self, 'data_file'):
+            # If we're using direct data injection, return an empty dict
+            return {}
+            
         try:
             with open(self.data_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             return data.get('store', {})
-        except FileNotFoundError:
-            raise RuntimeError(f"Store data file not found: {self.data_file}")
+        except FileNotFoundError as e:
+            raise RuntimeError(f"Store data file not found: {self.data_file}") from e
         except json.JSONDecodeError as e:
-            raise RuntimeError(f"Invalid JSON in store data file: {e}")
+            raise RuntimeError(f"Invalid JSON in store data file: {e}") from e
     
     def get_store_info(self) -> StoreResponse:
         """Get complete store information."""
