@@ -178,7 +178,7 @@ def base_model():
 @pytest.fixture
 def base_service(base_model):
     """Create a BaseService instance for testing."""
-    from app.services.base import BaseService
+    from app.services import BaseService
     return BaseService(base_model)
 
 # Fixture for a test database object

@@ -1,4 +1,5 @@
 import pytest
+import httpx
 from unittest.mock import AsyncMock, patch, MagicMock
 from fastapi import HTTPException, status
 
@@ -137,8 +138,12 @@ class TestProductService:
     
     async def test_get_product_not_found(self, product_service, mock_httpx_client):
         """Test getting a non-existent product."""
-        # Configure the mock to return an empty response
-        mock_httpx_client.json.return_value = {}
+        # Configure the mock to raise HTTPStatusError with 404
+        mock_httpx_client.raise_for_status.side_effect = httpx.HTTPStatusError(
+            "Not Found",
+            request=httpx.Request("GET", "http://test"),
+            response=httpx.Response(404, json={"message": "Not Found"})
+        )
         
         with pytest.raises(HTTPException) as exc_info:
             await product_service.get_product(999)
