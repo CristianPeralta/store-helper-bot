@@ -155,7 +155,9 @@ class ToolManager:
                 logger.debug("Store service returned successfully")
                 
                 # Handle Pydantic models by converting to dict
-                if hasattr(result, 'dict'):
+                if hasattr(result, 'model_dump'):
+                    result = result.model_dump()
+                elif hasattr(result, 'dict'):  # Fallback for older Pydantic versions
                     result = result.dict()
                 
                 # Format the response based on the result type
