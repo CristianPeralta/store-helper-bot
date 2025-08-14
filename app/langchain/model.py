@@ -32,11 +32,27 @@ class StoreAssistant:
     """Assistant that orchestrates LLM + tools through a LangGraph."""
     def __init__(self, db: AsyncSession):
         self.tools = ToolManager(db=db).tools
-        self.llm = init_chat_model("accounts/fireworks/models/qwen3-30b-a3b", model_provider="fireworks")
+        self.llm = self._get_llm_chat_model("fireworks")
         self.llm_with_tools = self.llm.bind_tools(self.tools)
         self.graph: StateGraph = self._build_graph()
         self.system_message: Optional[Dict[str, Any]] = None
 
+    def _get_llm_chat_model(self, model_provider: str = "fireworks"):
+        if model_provider == "fireworks":
+            return init_chat_model(
+                "accounts/fireworks/models/qwen3-30b-a3b",
+                model_provider="fireworks"
+            )
+        elif model_provider == "openai":
+            return init_chat_model(
+                "qwen3:8b-q4_K_M",
+                model_provider="openai",
+                api_key="llm",
+                base_url="http://localhost:11434/v1"
+            )
+        else:
+            raise ValueError("Invalid MODEL_PROVIDER")
+        
     def _get_system_message(self, chat_id: str) -> Dict[str, Any]:
         return {
             "role": "system",
