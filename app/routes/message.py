@@ -4,8 +4,9 @@ from fastapi import APIRouter, Depends, Query, HTTPException, status, Background
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-from app.schemas.message import MessageResponse, MessageListQuery, MessageCreate, MessageCreateResponse
+from app.db.models.chat import Chat
 from app.db.models.message import Sender
+from app.schemas.message import MessageResponse, MessageListQuery, MessageCreate, MessageCreateResponse
 from app.services.message import message_service
 from app.services.chat_processor import ChatProcessor
 
@@ -56,6 +57,14 @@ async def create_message(
     - **message**: The message to create and process
     """
     try:
+        # Check if chat exists
+        chat = await db.get(Chat, message.chat_id)
+        if not chat:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Chat with id {message.chat_id} not found"
+            )
+            
         # Create the user message
         message = await message_service.create(db, obj_in=message)
         
@@ -70,11 +79,13 @@ async def create_message(
             "context": {}
         }
                
-        # Ensure the message is committed to the database
+        # Commit the transaction
+        await db.commit()
         await db.refresh(message)
 
-        # Process the message through the chat processor
+        # Process the message through the chat processor in the background
         if message.sender == Sender.CLIENT:
+            # Create a new session for the background task
             background_tasks.add_task(
                 chat_processor.process_message,
                 state,
@@ -86,8 +97,15 @@ async def create_message(
             message="Message processed successfully"
         )
         
-    except Exception as e:
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
         await db.rollback()
+        raise
+        
+    except Exception as e:
+        # Log the error and return a 500 response
+        await db.rollback()
+        print(f"Error creating message: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error processing message: {str(e)}"

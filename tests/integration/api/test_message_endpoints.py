@@ -1,4 +1,5 @@
 """Integration tests for message API endpoints."""
+import uuid
 import pytest
 from fastapi import status
 from httpx import AsyncClient
@@ -6,9 +7,23 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.chat import Chat, Intent as ChatIntent
 from app.db.models.message import Message, Sender, Intent as MessageIntent
+from app.schemas.message import SenderEnum, IntentEnum
 
-pytestmark = pytest.mark.asyncio
+# Configure warning filters at the module level
+pytestmark = [
+    pytest.mark.filterwarnings(
+        "ignore",
+        category=DeprecationWarning,
+        module=r"pydantic.*"
+    ),
+    pytest.mark.filterwarnings(
+        "ignore",
+        category=DeprecationWarning,
+        module=r"fireworks.*"
+    )
+]
 
+@pytest.mark.asyncio
 class TestMessageEndpoints:
     """Test cases for message-related API endpoints."""
     
@@ -168,6 +183,172 @@ class TestMessageEndpoints:
         data = response.json()
         assert isinstance(data, list)
         assert len(data) == 0
+
+    async def test_create_message_success(self, async_client: AsyncClient, db_session: AsyncSession):
+        """Test creating a new message successfully."""
+        # Create a test chat first
+        chat = Chat(
+            client_name="Test User",
+            client_email="test@example.com",
+            initial_intent=ChatIntent.GENERAL_QUESTION
+        )
+        db_session.add(chat)
+        await db_session.flush()
+        chat_id = str(chat.id)
+        
+        # Prepare message data
+        message_data = {
+            "chat_id": chat_id,
+            "content": "Hello, this is a test message",
+            "sender": SenderEnum.CLIENT.value,
+            "intent": IntentEnum.GREETING.value
+        }
+        
+        # Send POST request
+        response = await async_client.post("/api/messages/", json=message_data)
+        
+        # Verify response
+        assert response.status_code == status.HTTP_201_CREATED
+        response_data = response.json()
+        assert "data" in response_data
+        
+        # Verify message data in response
+        message = response_data["data"]
+        assert message["chat_id"] == chat_id
+        assert message["content"] == message_data["content"]
+        assert message["sender"] == message_data["sender"]
+        assert message["intent"] == message_data["intent"]
+        assert "id" in message
+        assert "created_at" in message
+        
+        # Verify message was saved in the database
+        db_response = await async_client.get(f"/api/messages/?chat_id={chat_id}")
+        assert db_response.status_code == status.HTTP_200_OK
+        messages = db_response.json()
+        
+        # There should be 2 messages: the user's message and the bot's response
+        assert len(messages) == 2
+        
+        # The first message should be the one we just created
+        assert messages[0]["id"] == message["id"]
+        assert messages[0]["content"] == message_data["content"]
+        assert messages[0]["sender"] == message_data["sender"]
+        
+        # The second message should be the bot's response
+        assert messages[1]["sender"] == "BOT"
+        assert messages[1]["chat_id"] == chat_id
+    
+    async def test_create_message_nonexistent_chat(self, async_client: AsyncClient):
+        """Test creating a message with a non-existent chat ID."""
+        # Prepare message data with non-existent chat ID
+        message_data = {
+            "chat_id": str(uuid.uuid4()),
+            "content": "This should fail",
+            "sender": SenderEnum.CLIENT.value,
+            "intent": IntentEnum.GREETING.value
+        }
+        
+        # Send POST request
+        response = await async_client.post("/api/messages/", json=message_data)
+        
+        # Verify error response
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        error_data = response.json()
+        assert "detail" in error_data
+        assert "not found" in error_data["detail"].lower()
+    
+    async def test_create_message_invalid_data(self, async_client: AsyncClient, db_session: AsyncSession):
+        """Test creating a message with invalid data."""
+        # Create a test chat first
+        chat = Chat(
+            client_name="Test User",
+            client_email="test@example.com",
+            initial_intent=ChatIntent.GENERAL_QUESTION
+        )
+        db_session.add(chat)
+        await db_session.flush()
+        chat_id = str(chat.id)
+        
+        # Test cases for invalid data
+        test_cases = [
+            (
+                {"content": "", "sender": SenderEnum.CLIENT.value},  # Empty content
+                status.HTTP_422_UNPROCESSABLE_ENTITY
+            ),
+            (
+                {"content": "a" * 2001, "sender": SenderEnum.CLIENT.value},  # Content too long
+                status.HTTP_422_UNPROCESSABLE_ENTITY
+            ),
+            (
+                {"content": "Valid content", "sender": "INVALID_SENDER"},  # Invalid sender
+                status.HTTP_422_UNPROCESSABLE_ENTITY
+            ),
+            (
+                {"content": "Valid content", "sender": SenderEnum.CLIENT.value, "intent": "INVALID_INTENT"},  # Invalid intent
+                status.HTTP_422_UNPROCESSABLE_ENTITY
+            ),
+            (
+                {"sender": SenderEnum.CLIENT.value},  # Missing content
+                status.HTTP_422_UNPROCESSABLE_ENTITY
+            ),
+            (
+                {"content": "Valid content"},  # Missing sender
+                status.HTTP_422_UNPROCESSABLE_ENTITY
+            )
+        ]
+        
+        for data, expected_status in test_cases:
+            # Add chat_id to the test data
+            test_data = {"chat_id": chat_id, **data}
+            response = await async_client.post("/api/messages/", json=test_data)
+            assert response.status_code == expected_status, f"Failed for data: {test_data}"
+    
+    async def test_create_message_background_processing(self, async_client: AsyncClient, db_session: AsyncSession, mocker):
+        """Test that message processing is triggered in the background."""
+        # Create a test chat
+        chat = Chat(
+            client_name="Test User",
+            client_email="test@example.com",
+            initial_intent=ChatIntent.GENERAL_QUESTION
+        )
+        db_session.add(chat)
+        await db_session.flush()
+        chat_id = str(chat.id)
+        
+        # Mock the ChatProcessor.process_message method
+        mock_process = mocker.patch(
+            'app.services.chat_processor.ChatProcessor.process_message',
+            return_value=None
+        )
+        
+        # Create a client message (should trigger background processing)
+        message_data = {
+            "chat_id": chat_id,
+            "content": "Hello, process this message",
+            "sender": SenderEnum.CLIENT.value,
+            "intent": IntentEnum.GREETING.value
+        }
+        
+        response = await async_client.post("/api/messages/", json=message_data)
+        assert response.status_code == status.HTTP_201_CREATED
+        
+        # Verify the background task was scheduled
+        mock_process.assert_called_once()
+        
+        # Create a bot message (should not trigger background processing)
+        bot_message_data = {
+            "chat_id": chat_id,
+            "content": "This is a bot response",
+            "sender": SenderEnum.BOT.value,
+            "intent": IntentEnum.GREETING.value
+        }
+        
+        mock_process.reset_mock()
+        response = await async_client.post("/api/messages/", json=bot_message_data)
+        assert response.status_code == status.HTTP_201_CREATED
+        
+        # Verify no background task was scheduled for bot messages
+        mock_process.assert_not_called()
     
     async def test_get_messages_invalid_sort_field(self, async_client: AsyncClient, db_session: AsyncSession):
         """Test that invalid sort fields are handled gracefully."""
