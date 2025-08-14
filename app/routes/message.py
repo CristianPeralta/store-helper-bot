@@ -1,11 +1,13 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException, status, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-from app.schemas.message import MessageResponse, MessageListQuery
+from app.schemas.message import MessageResponse, MessageListQuery, MessageCreate, MessageCreateResponse
+from app.db.models.message import Sender
 from app.services.message import message_service
+from app.services.chat_processor import ChatProcessor
 
 router = APIRouter(prefix="/messages", tags=["messages"])
 
@@ -40,3 +42,53 @@ async def get_messages(
         query_params=query_params,
     )
     return messages
+
+
+@router.post("/", response_model=MessageCreateResponse, status_code=status.HTTP_201_CREATED)
+async def create_message(
+    message: MessageCreate,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Create a new message and process it through the chat processor.
+    
+    - **message**: The message to create and process
+    """
+    try:
+        # Create the user message
+        message = await message_service.create(db, obj_in=message)
+        
+        # Initialize chat processor
+        chat_processor = ChatProcessor(db)
+        
+        # Create initial state for the conversation
+        state = {
+            "messages": [],
+            "chat_id": message.chat_id,
+            "current_intent": None,
+            "context": {}
+        }
+               
+        # Ensure the message is committed to the database
+        await db.refresh(message)
+
+        # Process the message through the chat processor
+        if message.sender == Sender.CLIENT:
+            background_tasks.add_task(
+                chat_processor.process_message,
+                state,
+                message
+            )
+        
+        return MessageCreateResponse(
+            data=message,
+            message="Message processed successfully"
+        )
+        
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error processing message: {str(e)}"
+        )
