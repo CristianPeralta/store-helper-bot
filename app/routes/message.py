@@ -65,6 +65,13 @@ async def create_message(
                 detail=f"Chat with id {message.chat_id} not found"
             )
             
+        # Check if message is empty
+        if not message.content.strip():
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Message content cannot be empty"
+            )
+
         # Create the user message
         message = await message_service.create(db, obj_in=message)
         
