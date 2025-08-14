@@ -233,10 +233,44 @@ def client(app: FastAPI) -> TestClient:
     """Create a test client for the FastAPI application."""
     return TestClient(app)
 
+
+@pytest.fixture(scope="session", autouse=True)
+def ensure_cleanup():
+    """Ensure all connections are properly closed after tests complete."""
+    yield  # Run all tests first
+    
+    # Clean up any remaining resources
+    import asyncio
+    import gc
+    
+    # Get the current event loop
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    
+    # Run any pending tasks
+    pending = asyncio.all_tasks(loop=loop)
+    if pending:
+        loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+    
+    # Force garbage collection to clean up any remaining resources
+    gc.collect()
+    
+    # Close the event loop
+    if loop.is_running():
+        loop.stop()
+    if not loop.is_closed():
+        loop.close()
+
 # Create an async test client
 @pytest_asyncio.fixture
 async def async_client(app: FastAPI, db_session) -> AsyncGenerator[AsyncClient, None]:
-    """Create an async test client for the FastAPI application."""
+    """Create an async test client for the FastAPI application.
+    
+    Ensures proper cleanup of AsyncClient and its underlying connections.
+    """
     async def get_test_db():
         try:
             yield db_session
@@ -247,8 +281,25 @@ async def async_client(app: FastAPI, db_session) -> AsyncGenerator[AsyncClient, 
     # Override the database dependency
     app.dependency_overrides[get_db] = get_test_db
     
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        yield ac
-    
-    # Clear overrides
-    app.dependency_overrides.clear()
+    # Configure AsyncClient with explicit timeout and connection limits
+    transport = None
+    try:
+        transport = AsyncClient(
+            app=app,
+            base_url="http://test",
+            timeout=30.0,  # Add a reasonable timeout
+            follow_redirects=True,  # Enable redirect following
+            http2=False,  # Disable HTTP/2 to avoid potential connection issues
+        )
+        yield transport
+    finally:
+        # Ensure proper cleanup of the transport
+        if transport is not None:
+            await transport.aclose()
+        
+        # Clear overrides
+        app.dependency_overrides.clear()
+        
+        # Force garbage collection to ensure connections are closed
+        import gc
+        gc.collect()

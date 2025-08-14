@@ -27,6 +27,23 @@ pytestmark = [
 class TestHumanAssistanceFlow:
     """Test the complete human assistance flow from chat start to inquiry creation."""
     
+    async def teardown_method(self):
+        """Ensure all resources are properly cleaned up after each test."""
+        import gc
+        import asyncio
+        
+        # Run any pending tasks
+        try:
+            loop = asyncio.get_event_loop()
+            pending = asyncio.all_tasks(loop=loop)
+            if pending:
+                await asyncio.gather(*pending, return_exceptions=True)
+        except RuntimeError:
+            pass  # No event loop
+            
+        # Force garbage collection to clean up any remaining resources
+        gc.collect()
+    
     @pytest.fixture
     async def create_chat(self, async_client: AsyncClient):
         """Helper to create a new chat and return the chat ID."""
