@@ -3,6 +3,8 @@ from app.services.chat import chat_service
 from app.schemas.chat import ChatCreate
 from app.db.silent_session import get_db_session
 from app.services.chat_processor import ChatProcessor
+from app.services.message import message_service
+from app.schemas.message import MessageCreate, SenderEnum
 
 """
 Console runner for the Store Helper chatbot.
@@ -73,8 +75,17 @@ async def main() -> None:
                         print("(Tip) You sent an empty message. Please type your question.")
                         continue
 
+                    user_message = await message_service.create(
+                        db,
+                        obj_in=MessageCreate(
+                            chat_id=chat.id,
+                            content=user_input,
+                            sender=SenderEnum.CLIENT,
+                        )
+                    )                 
+
                     # Process the message through the chat processor
-                    await chat_processor.process_message(state, user_input)
+                    await chat_processor.process_message(state, user_message)
 
                 except KeyboardInterrupt:
                     print(f"\nInterrupted. Your chat ID is: {chat.id}")
