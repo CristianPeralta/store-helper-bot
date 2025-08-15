@@ -264,7 +264,9 @@ class ToolManager:
                     result = await mapping[intent]()
 
                 # Convert Pydantic models to dict if needed
-                if hasattr(result, 'dict'):
+                if hasattr(result, 'model_dump'):
+                    result = result.model_dump()
+                elif hasattr(result, 'dict'):
                     result = result.dict()
                 
                 # Format the response based on the result type
