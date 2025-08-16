@@ -176,6 +176,12 @@ You: Do you have any backpacks in stock?
 Assistant: Yes, we have several backpacks available...
 ```
 
+Here's a demo of the CLI in action:
+
+<div align="center">
+  <img src="./docs/example.gif" alt="CLI Demo" width="800">
+</div>
+
 ## API Documentation
 
 Once the application is running, you can access:
