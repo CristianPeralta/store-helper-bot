@@ -32,12 +32,14 @@ class StoreAssistant:
     """Assistant that orchestrates LLM + tools through a LangGraph."""
     def __init__(self, db: AsyncSession):
         self.tools = ToolManager(db=db).tools
-        self.llm = self._get_llm_chat_model("fireworks")
+        self.llm = self._get_llm_chat_model()
         self.llm_with_tools = self.llm.bind_tools(self.tools)
         self.graph: StateGraph = self._build_graph()
         self.system_message: Optional[Dict[str, Any]] = None
 
-    def _get_llm_chat_model(self, model_provider: str = "fireworks"):
+    def _get_llm_chat_model(self):
+        model_provider = os.getenv("MODEL_PROVIDER", "fireworks")
+        logger.info("===> Using model provider: %s", model_provider)
         if model_provider == "fireworks":
             return init_chat_model(
                 "accounts/fireworks/models/qwen3-30b-a3b",

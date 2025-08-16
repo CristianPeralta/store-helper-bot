@@ -28,6 +28,9 @@ class Settings(BaseSettings):
 
     # Fireworks
     FIREWORKS_API_KEY: str
+
+    # Model provider
+    MODEL_PROVIDER: str = "fireworks"
     
     # Api for products
     FAKE_STORE_API_URL: str = "https://fakestoreapi.com"

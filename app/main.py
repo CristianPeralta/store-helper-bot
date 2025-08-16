@@ -16,6 +16,7 @@ async def lifespan(app: FastAPI):
     logger.info("Starting application...")
     logger.info(f"Environment: {settings.ENVIRONMENT}")
     logger.info(f"Debug mode: {settings.DEBUG}")
+    logger.info(f"Model provider: {settings.MODEL_PROVIDER}")
     
     # Initialize database
     try:
