@@ -87,7 +87,9 @@ store-helper-bot/
 
 ### Environment Variables
 
-Create a `.env` file in the root directory with the following variables:
+Create a `.env` file in the root directory with the following variables. Copy the contents from `.env.example` and update the values as needed.
+
+> **Important**: You must obtain a `FIREWORKS_API_KEY` from [Fireworks AI](https://fireworks.ai/) to use the chatbot features. This key is required for the AI functionality to work properly.
 
 ```
 # Database
