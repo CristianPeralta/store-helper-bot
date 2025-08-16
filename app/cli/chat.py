@@ -71,7 +71,7 @@ async def main() -> None:
         try:
             while True:
                 try:
-                    user_input = await _read_input("You: ")
+                    user_input = await _read_input("\nYou: ")
                     if user_input is None:
                         print("\nNo input detected. Type 'exit' to quit.")
                         continue
