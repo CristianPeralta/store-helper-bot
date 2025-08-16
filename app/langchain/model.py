@@ -1,12 +1,12 @@
 import os
 import re
-import logging
-from langchain.chat_models import init_chat_model
-from typing import Optional
 import json
-from typing import Annotated, Dict, Any
+import logging
+from typing import Optional, Annotated, Dict, Any
 from dotenv import load_dotenv
 load_dotenv()
+
+from langchain.chat_models import init_chat_model
 from typing_extensions import TypedDict
 from langgraph.graph.message import add_messages
 from langgraph.types import Command
@@ -14,6 +14,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import StateGraph, START
 from langgraph.prebuilt import ToolNode, tools_condition
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from .tools import ToolManager
 
 logger = logging.getLogger(__name__)
@@ -121,7 +122,7 @@ class StoreAssistant:
             }
     
     def get_json_content(self, content: str) -> dict:
-        logger.debug("LLM raw content: %s", content)
+        logger.info("LLM raw content: %s", content)
 
         if not content or not content.strip():
             logger.warning("Empty content returned by the LLM")

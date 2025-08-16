@@ -1,10 +1,17 @@
+import sys
+from pathlib import Path
 import logging
+
+# Add project root to path
+sys.path.append(str(Path(__file__).parent.parent))
+
 from app.services.chat import chat_service
 from app.schemas.chat import ChatCreate
 from app.db.silent_session import get_db_session
 from app.services.chat_processor import ChatProcessor
 from app.services.message import message_service
 from app.schemas.message import MessageCreate, SenderEnum
+from app.core.config import get_settings
 
 """
 Console runner for the Store Helper chatbot.
@@ -18,12 +25,12 @@ This script demonstrates how to:
 It is intentionally written as an educational example for engineering students.
 """
 
-# Configure structured logging instead of disabling it. In an educational setting,
-# logs are useful to understand the flow and to debug issues. Adjust the level if needed.
+# Minimal logging configuration
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    level=get_settings().LOG_LEVEL.upper(),
+    format='%(asctime)s | %(levelname)-8s | %(name)s | %(message)s'
 )
+
 logger = logging.getLogger(__name__)
 
 print("\n" + "="*50)

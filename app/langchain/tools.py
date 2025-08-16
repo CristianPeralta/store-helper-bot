@@ -93,8 +93,10 @@ class ToolManager:
             
             # Log for demonstration (in production, this would go to a database/queue)
             logger.info(
-                "NEW INQUIRY REGISTERED | id=%s name=%s email=%s status=pending",
-                inquiry_id, name, email,
+                "New inquiry registered | inquiry_id=%s | name=%s | email=%s | status=pending",
+                inquiry_id,
+                name,
+                email.split('@')[0] + '@***'
             )
             
             # Prepare the response to the user
@@ -149,11 +151,9 @@ class ToolManager:
                 })
 
             try:
-                logger.debug("Calling store service")
                 # Call the synchronous store service method directly
                 result = mapping[intent]()
-                logger.debug("Store service returned successfully")
-                
+
                 # Handle Pydantic models by converting to dict
                 if hasattr(result, 'model_dump'):
                     result = result.model_dump()
@@ -216,6 +216,7 @@ class ToolManager:
             - product_details: Details of a specific product by product id
             - product_list: List of all products
             """
+            logger.info("get_products_data called | intent=%s", intent)
 
             # Define the mapping of intents to async functions
             mapping = {
@@ -247,8 +248,6 @@ class ToolManager:
                         ToolMessage("Please provide a product ID.", tool_call_id=tool_call_id)
                     ]
                 })
-
-            logger.info("get_products_data called | intent=%s", intent)
 
             try:
                 # Call the appropriate async function with parameters
