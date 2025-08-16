@@ -1,12 +1,12 @@
 """End-to-end tests for store information flows.
 
 This module contains all tests related to store information intents:
-- STORE_HOURS: Horario de atención
-- STORE_CONTACT: Información de contacto
-- STORE_PROMOTIONS: Promociones actuales
-- STORE_PAYMENT_METHODS: Métodos de pago aceptados
-- STORE_SOCIAL_MEDIA: Redes sociales de la tienda
-- STORE_LOCATION: Ubicación de la tienda
+- STORE_HOURS: Business hours
+- STORE_CONTACT: Contact information
+- STORE_PROMOTIONS: Current promotions
+- STORE_PAYMENT_METHODS: Accepted payment methods
+- STORE_SOCIAL_MEDIA: Store's social media
+- STORE_LOCATION: Store location
 """
 import pytest
 from httpx import AsyncClient

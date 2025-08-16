@@ -82,13 +82,13 @@ class TestProductListFlow(BaseProductTest):
     @pytest.mark.parametrize("user_message,intent,expected_keywords", [
         ("What products do you have available?", 
          MessageIntent.PRODUCT_LIST.value,
-         ["product"]),  # Más flexible con la respuesta
+         ["product"]),  # More flexible with the response
         ("Show me all the items you sell",
          MessageIntent.PRODUCT_LIST.value,
          ["item", "sell"]),
         ("I want to see the product catalog",
          MessageIntent.PRODUCT_LIST.value,
-         ["catalog"]),  # Más flexible con la respuesta
+         ["catalog"]),  # More flexible with the response
     ])
     @pytest.mark.asyncio
     async def test_product_list_flow(
@@ -123,7 +123,7 @@ class TestProductListFlow(BaseProductTest):
             assert keyword.lower() in response_content.lower(), f"Expected '{keyword}' in response: {response_content}"
         
         # Verify the response contains product information
-        # Verificamos si la respuesta tiene algún indicio de ser una lista de productos
+        # We check if the response has any indication of being a product list
         has_product_info = any(
             keyword in response_content.lower() 
             for keyword in ["product", "item", "$ ", "price", "category", "http"]
@@ -138,10 +138,10 @@ class TestProductCategoriesFlow(BaseProductTest):
     @pytest.mark.parametrize("user_message,intent,expected_keywords", [
         ("What product categories do you have?", 
          MessageIntent.PRODUCT_CATEGORIES.value,
-         ["category", "product", "list", "help"]),  # Más flexible con la respuesta
+         ["category", "product", "list", "help"]),  # More flexible with the response
         ("Show me the types of items you sell",
          MessageIntent.PRODUCT_CATEGORIES.value,
-         ["sell", "item", "product", "help"]),  # Más flexible con la respuesta
+         ["sell", "item", "product", "help"]),  # More flexible with the response
     ])
     @pytest.mark.asyncio
     async def test_product_categories_flow(
@@ -183,23 +183,23 @@ class TestProductCategoriesFlow(BaseProductTest):
             for keyword in ["error", "sorry", "unable", "can't", "help", "assistance"]
         )
         
-        # Verificar si la respuesta menciona categorías conocidas
+        # Check if the response mentions known categories
         common_categories = ["electronics", "jewelry", "men", "women", "clothing"]
         has_known_category = any(
             category in response_content.lower() 
             for category in common_categories
         )
         
-        # Verificar si la respuesta menciona categorías en general
+        # Check if the response mentions categories in general
         mentions_categories = any(
             keyword in response_content.lower() 
             for keyword in ["category", "categories", "type", "kind"]
         )
         
-        # La respuesta es válida si:
+        # The response is valid if:
         # 1. Contiene una palabra clave esperada, O
         # 2. Es un mensaje de error/asistencia, O
-        # 3. Menciona una categoría conocida o categorías en general
+        # 3. Mentions a known category or categories in general
         assert (has_expected_keyword or is_error_or_assistance or has_known_category or mentions_categories), \
             f"Response should contain expected keywords, be an error/assistance message, or mention known categories. " \
             f"Expected one of: {expected_keywords}. Actual response: {response_content}"
@@ -212,7 +212,7 @@ class TestProductDetailsFlow(BaseProductTest):
     @pytest.mark.parametrize("user_message,intent,product_id,expected_keywords", [
         ("I want information about product 1", 
          MessageIntent.PRODUCT_DETAILS.value, 1,
-         ["product"]),  # Más flexible con la respuesta
+         ["product"]),  # More flexible with the response
         ("Show me more details about item 2",
          MessageIntent.PRODUCT_DETAILS.value, 2,
          ["item", "details"]),  # Más flexible con la respuesta
@@ -258,23 +258,23 @@ class TestProductDetailsFlow(BaseProductTest):
             for keyword in ["error", "sorry", "unable", "can't", "help", "assistance"]
         )
         
-        # Verificar si la respuesta contiene información de producto
+        # Check if the response contains product information
         has_product_info = any(
             keyword in response_content.lower() 
             for keyword in ["name", "price", "description", "category", "$", "http", "product", "item"]
         )
         
-        # Verificar si la respuesta indica que el bot está procesando la solicitud
+        # Check if the response indicates that the bot is processing the request
         is_processing = any(
             keyword in response_content.lower()
             for keyword in ["check", "look up", "find", "get", "fetch", "retrieve", "search"]
         )
         
-        # La respuesta es válida si:
+        # The response is valid if:
         # 1. Contiene una palabra clave esperada, O
         # 2. Es un mensaje de error/asistencia, O
-        # 3. Contiene información de producto, O
-        # 4. Indica que el bot está procesando la solicitud
+        # 3. Contains product information, OR
+        # 4. Indicates that the bot is processing the request
         assert (has_expected_keyword or is_error_or_assistance or has_product_info or is_processing), \
             f"Response should contain expected keywords, be an error/assistance message, contain product details, " \
             f"or indicate processing. Expected one of: {expected_keywords}. Actual response: {response_content}"
@@ -287,10 +287,10 @@ class TestProductListByCategoryFlow(BaseProductTest):
     @pytest.mark.parametrize("user_message,intent,category,expected_keywords", [
         ("Show me electronics products",
          MessageIntent.PRODUCT_LIST_BY_CATEGORY.value, "electronics",
-         ["electronic"]),  # Más flexible con la respuesta
+         ["electronic"]),  # More flexible with the response
         ("What men's clothing do you have?",
          MessageIntent.PRODUCT_LIST_BY_CATEGORY.value, "men's clothing",
-         ["men", "clothing"]),  # Más flexible con la respuesta
+         ["men", "clothing"]),  # More flexible with the response
     ])
     @pytest.mark.asyncio
     async def test_product_list_by_category_flow(
