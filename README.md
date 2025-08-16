@@ -89,7 +89,35 @@ store-helper-bot/
 
 Create a `.env` file in the root directory with the following variables. Copy the contents from `.env.example` and update the values as needed.
 
-> **Important**: You must obtain a `FIREWORKS_API_KEY` from [Fireworks AI](https://fireworks.ai/) to use the chatbot features. This key is required for the AI functionality to work properly.
+> **Important**: You must obtain a `FIREWORKS_API_KEY` from [Fireworks AI](https://fireworks.ai/) to use the chatbot features with Fireworks models. This key is required for the AI functionality to work properly.
+
+### Using Local Models with Ollama
+
+The application supports using local models through [Ollama](https://ollama.ai/). To use a local model:
+
+1. Install and run Ollama on your machine:
+   ```bash
+   # Install Ollama
+   curl -fsSL https://ollama.com/install.sh | sh
+   
+   # Start the Ollama server
+   ollama serve &
+   
+   # Pull a model (example using Qwen 7B)
+   ollama pull qwen:7b
+   ```
+
+2. Configure your `.env` file to use the local model:
+   ```
+   # In your .env file
+   MODEL_PROVIDER=openai
+   # The following values are required but not used when using Ollama locally
+   FIREWORKS_API_KEY=not-needed
+   ```
+
+3. The application will automatically connect to your local Ollama server at `http://localhost:11434`
+
+> **Note**: When using local models, make sure you have sufficient system resources (RAM and CPU/GPU) to run the model efficiently.
 
 ```
 # Database
