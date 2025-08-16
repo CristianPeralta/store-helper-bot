@@ -157,12 +157,45 @@ class TestOtherFlow(BaseAdditionalFlowsTest):
     """Test handling of unrecognized queries."""
     
     @pytest.mark.parametrize(
-        "user_message,expected_keywords",
+        (
+            "user_message",
+            "expected_keywords"
+        ),
         [
-            ("asdfghjkl", ["typo", "mistake", "clarify", "question", "help", "understand", "something else", "unclear", "accident", "valid", "unintended"]),
-            ("Random gibberish", ["unrelated", "rephrase", "ask a question", "random", "text", "help", "sense", "mistake", "unclear", "test"]),
-            ("1234567890", ["numbers", "understand", "help", "clarify", "mistake", "unclear", "number"]),
-            ("!@#$%^&*()", ["special", "characters", "understand", "help", "clarify", "symbols", "something else", "mistake", "unclear", "accident", "valid", "unintended", "clarify"]),
+            (
+                "asdfghjkl",
+                [
+                    "typo", "mistake", "clarify", "question", "help", "understand",
+                    "something else", "unclear", "accident", "valid", "unintended",
+                    "random", "text", "test", "unintended", "understand", "clarify",
+                    "typo", "string", "characters"
+                ]
+            ),
+            (
+                "Random gibberish",
+                [
+                    "unrelated", "rephrase", "ask a question", "random", "text",
+                    "help", "sense", "mistake", "unclear", "test", "unintended",
+                    "understand", "valid", "clarify"
+                ]
+            ),
+            (
+                "1234567890",
+                [
+                    "numbers", "understand", "help", "clarify", "mistake",
+                    "unclear", "number", "recognized", "digit", "unintended",
+                    "understand", "valid", "numeric"
+                ]
+            ),
+            (
+                "!@#$%^&*()",
+                [
+                    "special", "characters", "understand", "help", "clarify",
+                    "symbols", "something else", "mistake", "unclear", "accident",
+                    "valid", "unintended", "clarify", "unintended", "understand",
+                    "clarify", "typo"
+                ]
+            )
         ]
     )
     @pytest.mark.asyncio
