@@ -1,8 +1,53 @@
-# Store Helper Bot
+<div align="center">
+  <h1>Store Helper Bot</h1>
+  <p>A conversational assistant for store information and product queries</p>
+  
+  
+  [![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
+  [![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
+  [![LangChain](https://img.shields.io/badge/LangChain-FF6B00?style=flat)](https://www.langchain.com/)
+  [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=flat&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 
-A conversational assistant built with **FastAPI**, **LangChain**, and **PostgreSQL**, designed to help users quickly get information about store products, availability, prices, and general store details like hours or location.
+  <div>
+    <img src="./docs/cli-example.gif" alt="CLI Demo" width="800">
+  </div>
+  
+</div>
 
-## Features
+## 🚀 Quick Start
+
+Get up and running in minutes:
+
+```bash
+# Clone and setup
+$ git clone https://github.com/CristianPeralta/store-helper-bot.git
+$ cd store-helper-bot
+
+# Install dependencies
+$ python -m venv venv
+$ source venv/bin/activate  # On Windows: venv\Scripts\activate
+$ pip install -r requirements.txt
+
+# Run the CLI interface
+$ python -m app.cli.chat
+```
+
+## 🌟 API Interface
+
+In addition to the CLI shown above, the application also provides a REST API for integration with other applications:
+
+```bash
+# Start the API server
+uvicorn app.main:app --reload
+```
+
+Access the interactive API documentation at `http://localhost:8000/docs` for a complete reference and to test the endpoints directly from your browser.
+
+<div align="center">
+  <img src="./docs/api-example.gif" alt="API Demo" width="700">
+</div>
+
+## ✨ Features
 
 - **Chatbot with Memory**  
   Remembers users and their previous interactions to deliver a more personalized experience.
@@ -19,14 +64,40 @@ A conversational assistant built with **FastAPI**, **LangChain**, and **PostgreS
 - **Data Persistence**  
   Tracks users, conversations, states, and messages in a structured PostgreSQL database.
 
-## Tech Stack
+## 🛠️ Tech Stack
 
-- **Backend**: [FastAPI](https://fastapi.tiangolo.com/)
-- **AI/ML**: [LangChain](https://www.langchain.com/)
-- **Database**: [PostgreSQL](https://www.postgresql.org/)
-- **ORM**: [SQLAlchemy](https://www.sqlalchemy.org/)
-- **External API**: [FakeStoreAPI](https://fakestoreapi.com/)
-- **Testing**: pytest, pytest-asyncio, pytest-cov
+<div align="center">
+  <table>
+    <tr>
+      <td align="center"><b>Backend</b></td>
+      <td align="center"><b>AI/ML</b></td>
+      <td align="center"><b>Database</b></td>
+      <td align="center"><b>Tools</b></td>
+    </tr>
+    <tr>
+      <td>
+        <a href="https://fastapi.tiangolo.com/">
+          <img src="https://fastapi.tiangolo.com/img/logo-margin/logo-teal.png" width="100" alt="FastAPI">
+        </a>
+      </td>
+      <td>
+        <a href="https://www.langchain.com/">
+          <img src="https://opensource.muenchen.de/logo/langchain.jpg" width="100" alt="LangChain">
+        </a>
+      </td>
+      <td>
+        <a href="https://www.postgresql.org/">
+          <img src="https://www.postgresql.org/media/img/about/press/elephant.png" width="100" alt="PostgreSQL">
+        </a>
+      </td>
+      <td>
+        <a href="https://www.sqlalchemy.org/">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/d/d7/SQLAlchemy.svg" width="100" alt="SQLAlchemy">
+        </a>
+      </td>
+    </tr>
+  </table>
+</div>
 
 ## Project Structure
 
@@ -154,33 +225,19 @@ uvicorn app.main:app --reload
 
 The API will be available at `http://localhost:8000`
 
-### Console Interface
-You can also interact with the chatbot directly from the command line using the console interface:
+## 💬 Console Interface
+
+Interact with the chatbot directly from your terminal:
 
 ```bash
 python -m app.cli.chat
 ```
 
-This will start an interactive chat session where you can:
-- Type your messages and get responses from the assistant
-- See the conversation history
-- The chat session will be persisted in the database
-
-Example usage:
-```
-$ python -m app.cli.chat
-Starting Store Helper Bot console interface...
-Type 'exit' or 'quit' to end the session.
-
-You: Do you have any backpacks in stock?
-Assistant: Yes, we have several backpacks available...
-```
-
-Here's a demo of the CLI in action:
-
-<div align="center">
-  <img src="./docs/example.gif" alt="CLI Demo" width="800">
-</div>
+### Features
+- Natural language processing for product queries
+- Persistent conversation history
+- Context-aware responses
+- Easy integration with store databases
 
 ## API Documentation
 
@@ -255,23 +312,6 @@ The diagram illustrates our conversation flow, where:
 - **Nodes** represent different states or actions in the conversation
 - **Edges** define the possible transitions between states
 - **Conditional logic** determines the flow based on user input and conversation context
-
-## Dependencies
-
-### Main Dependencies
-- FastAPI
-- LangChain
-- SQLAlchemy
-- PostgreSQL
-- Pydantic
-- httpx
-
-### Development Dependencies
-- pytest
-- pytest-asyncio
-- pytest-cov
-- pytest-mock
-- factory-boy
 
 ## Contributing
 
