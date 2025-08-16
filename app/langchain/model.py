@@ -3,8 +3,6 @@ import re
 import json
 import logging
 from typing import Optional, Annotated, Dict, Any
-from dotenv import load_dotenv
-load_dotenv()
 
 from langchain.chat_models import init_chat_model
 from typing_extensions import TypedDict
@@ -18,9 +16,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from .tools import ToolManager
 
 logger = logging.getLogger(__name__)
-
-os.environ["GOOGLE_API_KEY"] = os.getenv("GEMINI_API_KEY")
-os.environ["FIREWORKS_API_KEY"] = os.getenv("FIREWORKS_API_KEY")
 
 class State(TypedDict):
     messages: Annotated[list, add_messages]
