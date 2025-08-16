@@ -1,9 +1,11 @@
+import os
 import sys
 from pathlib import Path
 import logging
 
-# Add project root to path
-sys.path.append(str(Path(__file__).parent.parent))
+# Add project root to Python path
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
 
 from app.services.chat import chat_service
 from app.schemas.chat import ChatCreate

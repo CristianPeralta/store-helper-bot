@@ -128,7 +128,7 @@ The API will be available at `http://localhost:8000`
 You can also interact with the chatbot directly from the command line using the console interface:
 
 ```bash
-python chat_console.py
+python -m app.cli.chat
 ```
 
 This will start an interactive chat session where you can:
@@ -138,7 +138,7 @@ This will start an interactive chat session where you can:
 
 Example usage:
 ```
-$ python chat_console.py
+$ python -m app.cli.chat
 Starting Store Helper Bot console interface...
 Type 'exit' or 'quit' to end the session.
 
