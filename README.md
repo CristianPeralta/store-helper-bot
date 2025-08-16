@@ -212,7 +212,7 @@ flowchart TD
 This project leverages **LangGraph** to manage conversation flows through a state machine pattern. The graph-based approach allows for more flexible and maintainable conversation handling, especially for complex multi-turn interactions.
 
 <p align="center">
-  <img src="langgraph_diagrama.png" alt="LangGraph State Machine" />
+  <img src="docs/diagrams/workflow.png" alt="LangGraph State Machine" />
 </p>
 
 The diagram illustrates our conversation flow, where:
